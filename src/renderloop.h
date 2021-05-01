@@ -109,6 +109,11 @@ public:
      */
     void setVrrPolicy(VrrPolicy vrrPolicy);
 
+    /**
+     * Set whether or not async page flips may be used for a fullscreen surface
+     */
+    void setTearingAllowed(bool allow);
+
 Q_SIGNALS:
     /**
      * This signal is emitted when the refresh rate of this RenderLoop has changed.

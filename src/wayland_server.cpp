@@ -67,6 +67,7 @@
 #include <KWaylandServer/viewporter_interface.h>
 #include <KWaylandServer/datacontroldevicemanager_v1_interface.h>
 #include <KWaylandServer/primaryselectiondevicemanager_v1_interface.h>
+#include <KWaylandServer/tearing_control_v1_interface.h>
 
 // Qt
 #include <QCryptographicHash>
@@ -541,6 +542,7 @@ bool WaylandServer::init(InitializationFlags flags)
     m_XdgForeign = new XdgForeignV2Interface(m_display, m_display);
     m_keyState = new KeyStateInterface(m_display, m_display);
     m_inputMethod = new InputMethodV1Interface(m_display, m_display);
+    new TearingControlV1Interface(m_display, m_display);
 
     return true;
 }

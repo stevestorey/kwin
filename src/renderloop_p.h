@@ -11,6 +11,11 @@
 
 #include <QTimer>
 
+namespace KWaylandServer
+{
+class BufferInterface;
+}
+
 namespace KWin
 {
 
@@ -43,9 +48,15 @@ public:
     RenderLoop::VrrPolicy vrrPolicy = RenderLoop::VrrPolicy::Never;
     bool hasFullscreenSurface = false;
 
+    bool tearingAllowed = false;
+    bool surfaceWantsTearing = false;
+    KWaylandServer::BufferInterface *currentFullscreenBuffer = nullptr;
+    KWaylandServer::BufferInterface *nextFullscreenBuffer = nullptr;
+
     enum class SyncMode {
         Fixed,
         Adaptive,
+        None
     };
     SyncMode presentMode = SyncMode::Fixed;
 };

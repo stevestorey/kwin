@@ -9,6 +9,9 @@
 #include "renderloop_p.h"
 #include "utils.h"
 #include "surfaceitem.h"
+#include "surfaceitem_wayland.h"
+
+#include "KWaylandServer/surface_interface.h"
 
 namespace KWin
 {
@@ -36,27 +39,33 @@ void RenderLoopPrivate::scheduleRepaint()
     if (kwinApp()->isTerminating()) {
         return;
     }
+    const std::chrono::nanoseconds vblankInterval(1'000'000'000'000ull / refreshRate);
+    const std::chrono::nanoseconds currentTime(std::chrono::steady_clock::now().time_since_epoch());
+
     if (vrrPolicy == RenderLoop::VrrPolicy::Always || (vrrPolicy == RenderLoop::VrrPolicy::Automatic && hasFullscreenSurface)) {
         presentMode = SyncMode::Adaptive;
-    } else {
-        presentMode = SyncMode::Fixed;
-    }
-    const std::chrono::nanoseconds vblankInterval(1'000'000'000'000ull / refreshRate);
-
-    if (presentMode == SyncMode::Adaptive) {
         std::chrono::nanoseconds timeSincePresent = std::chrono::steady_clock::now().time_since_epoch() - lastPresentationTimestamp;
         if (timeSincePresent > vblankInterval) {
             // client renders slower than refresh rate -> immediately present
+            nextPresentationTimestamp = currentTime + std::chrono::nanoseconds(100000);
             compositeTimer.start(0);
             return;
         }
         // client renders faster than refresh rate -> normal frame scheduling
+    } else if (tearingAllowed && surfaceWantsTearing) {
+        presentMode = SyncMode::None;
+        if (nextFullscreenBuffer != currentFullscreenBuffer) {
+            currentFullscreenBuffer = nextFullscreenBuffer;
+            nextPresentationTimestamp = currentTime + std::chrono::nanoseconds(100000);
+            compositeTimer.start(0);
+            return;
+        }
+    } else {
+        presentMode = SyncMode::Fixed;
     }
     if (compositeTimer.isActive()) {
         return;
     }
-
-    const std::chrono::nanoseconds currentTime(std::chrono::steady_clock::now().time_since_epoch());
 
     // Estimate when the next presentation will occur. Note that this is a prediction.
     nextPresentationTimestamp = lastPresentationTimestamp + vblankInterval;
@@ -253,6 +262,14 @@ std::chrono::nanoseconds RenderLoop::nextPresentationTimestamp() const
 void RenderLoop::setFullscreenSurface(SurfaceItem *surfaceItem)
 {
     d->hasFullscreenSurface = surfaceItem != nullptr;
+    if (auto waylandItem = dynamic_cast<SurfaceItemWayland*>(surfaceItem)) {
+        auto surface = waylandItem->surface();
+        d->surfaceWantsTearing = surface && surface->presentationHint() == KWaylandServer::SurfaceTearingControlV1Interface::PresentationHint::async;
+        d->nextFullscreenBuffer = surface ? surface->buffer() : nullptr;
+    } else {
+        d->surfaceWantsTearing = false;
+        d->nextFullscreenBuffer = nullptr;
+    }
 }
 
 RenderLoop::VrrPolicy RenderLoop::vrrPolicy() const
@@ -263,6 +280,11 @@ RenderLoop::VrrPolicy RenderLoop::vrrPolicy() const
 void RenderLoop::setVrrPolicy(VrrPolicy policy)
 {
     d->vrrPolicy = policy;
+}
+
+void RenderLoop::setTearingAllowed(bool allow)
+{
+    d->tearingAllowed = allow;
 }
 
 } // namespace KWin

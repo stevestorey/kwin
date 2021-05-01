@@ -82,6 +82,8 @@ DrmGpu::DrmGpu(DrmBackend *backend, const QString &devNode, int fd, dev_t device
     if (atomicModesetting) {
         tryAMS();
     }
+
+    m_asyncPageflipSupported = !m_useEglStreams && drmGetCap(fd, DRM_CAP_ASYNC_PAGE_FLIP, &capability) && capability == 1;
 }
 
 DrmGpu::~DrmGpu()

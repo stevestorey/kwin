@@ -98,6 +98,10 @@ public:
 
     void waitIdle();
 
+    bool asyncPageflipSupported() const {
+        return m_asyncPageflipSupported;
+    }
+
 Q_SIGNALS:
     void outputAdded(DrmOutput *output);
     void outputRemoved(DrmOutput *output);
@@ -129,6 +133,7 @@ private:
     clockid_t m_presentationClock;
     QSocketNotifier *m_socketNotifier = nullptr;
     bool m_addFB2ModifiersSupported = false;
+    bool m_asyncPageflipSupported = false;
 
     // all planes: primarys, cursors and overlays
     QVector<DrmPlane*> m_planes;

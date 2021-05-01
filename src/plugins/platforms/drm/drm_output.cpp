@@ -40,6 +40,7 @@ DrmOutput::DrmOutput(DrmBackend *backend, DrmGpu *gpu)
     , m_gpu(gpu)
     , m_renderLoop(new RenderLoop(this))
 {
+    m_renderLoop->setTearingAllowed(m_gpu->asyncPageflipSupported());
 }
 
 DrmOutput::~DrmOutput()
@@ -581,9 +582,8 @@ void DrmOutput::pageFlipped()
             p->flipBuffer();
         }
         m_nextPlanesFlipList.clear();
-    } else {
-        m_crtc->flipBuffer();
     }
+    m_crtc->flipBuffer();
 
     if (m_atomicOffPending) {
         dpmsAtomicOff();
@@ -600,7 +600,12 @@ bool DrmOutput::present(const QSharedPointer<DrmBuffer> &buffer)
     }
     RenderLoopPrivate *renderLoopPrivate = RenderLoopPrivate::get(m_renderLoop);
     setVrr(renderLoopPrivate->presentMode == RenderLoopPrivate::SyncMode::Adaptive);
-    return m_gpu->atomicModeSetting() ? presentAtomically(buffer) : presentLegacy(buffer);
+    bool async = renderLoopPrivate->presentMode == RenderLoopPrivate::SyncMode::None;
+    if (m_gpu->atomicModeSetting() && !async) {
+        return presentAtomically(buffer);
+    } else {
+        return presentLegacy(buffer, async);
+    }
 }
 
 bool DrmOutput::dpmsAtomicOff()
@@ -610,6 +615,7 @@ bool DrmOutput::dpmsAtomicOff()
     // TODO: With multiple planes: deactivate all of them here
     hideCursor();
     m_primaryPlane->setNext(nullptr);
+    m_crtc->setNext(nullptr);
     m_nextPlanesFlipList << m_primaryPlane;
 
     if (!doAtomicCommit(AtomicCommitMode::Test)) {
@@ -648,6 +654,7 @@ bool DrmOutput::presentAtomically(const QSharedPointer<DrmBuffer> &buffer)
 #endif
 
     m_primaryPlane->setNext(buffer);
+    m_crtc->setNext(buffer);
     m_nextPlanesFlipList << m_primaryPlane;
 
     if (!doAtomicCommit(AtomicCommitMode::Test)) {
@@ -694,9 +701,10 @@ bool DrmOutput::presentAtomically(const QSharedPointer<DrmBuffer> &buffer)
     return true;
 }
 
-bool DrmOutput::presentLegacy(const QSharedPointer<DrmBuffer> &buffer)
+bool DrmOutput::presentLegacy(const QSharedPointer<DrmBuffer> &buffer, bool async)
 {
     if (m_crtc->next()) {
+        qCDebug(KWIN_DRM) << "page not flipped yet...";
         return false;
     }
     if (!m_backend->session()->isActive()) {
@@ -710,11 +718,22 @@ bool DrmOutput::presentLegacy(const QSharedPointer<DrmBuffer> &buffer)
             return false;
         }
     }
-    const bool ok = drmModePageFlip(m_gpu->fd(), m_crtc->id(), buffer->bufferId(), DRM_MODE_PAGE_FLIP_EVENT, this) == 0;
+
+    uint32_t flags = async ? DRM_MODE_PAGE_FLIP_ASYNC : DRM_MODE_PAGE_FLIP_EVENT;
+    const bool ok = drmModePageFlip(m_gpu->fd(), m_crtc->id(), buffer->bufferId(), flags, this) == 0;
     if (ok) {
         m_crtc->setNext(buffer);
-        m_pageFlipPending = true;
-    } else {
+        if (async) {
+            RenderLoopPrivate::get(m_renderLoop)->notifyFrameCompleted(std::chrono::steady_clock::now().time_since_epoch());
+            m_crtc->flipBuffer();
+            if (m_primaryPlane) {
+                m_primaryPlane->setNext(nullptr);
+                m_primaryPlane->setCurrent(buffer);
+            }
+        } else {
+            m_pageFlipPending = true;
+        }
+    } else if (!async || errno != EBUSY) {
         qCWarning(KWIN_DRM) << "Page flip failed:" << strerror(errno);
     }
     return ok;

@@ -101,7 +101,7 @@ private:
     };
     bool doAtomicCommit(AtomicCommitMode mode);
 
-    bool presentLegacy(const QSharedPointer<DrmBuffer> &buffer);
+    bool presentLegacy(const QSharedPointer<DrmBuffer> &buffer, bool async);
     bool setModeLegacy(DrmBuffer *buffer);
     void initOutputDevice(drmModeConnector *connector);
 
@@ -149,6 +149,7 @@ private:
     bool m_pageFlipPending = false;
     bool m_atomicOffPending = false;
     bool m_modesetRequested = true;
+    bool m_async = false;
 
     struct {
         Transform transform;
