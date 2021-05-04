@@ -100,12 +100,16 @@ void ApplicationMenu::slotMenuHidden(const QString &serviceName, const QDBusObje
     }
 }
 
-void ApplicationMenu::showApplicationMenu(const QPoint &p, AbstractClient *c, int actionId)
+void ApplicationMenu::showApplicationMenu(const QPoint &p, AbstractClient *c, int actionId, unsigned int serial)
 {
     if (!c->hasApplicationMenu()) {
         return;
     }
-    m_appmenuInterface->showMenu(p.x(), p.y(), c->applicationMenuServiceName(), QDBusObjectPath(c->applicationMenuObjectPath()), actionId);
+    if (serial == 0) {
+        m_appmenuInterface->showMenu(p.x(), p.y(), c->applicationMenuServiceName(), QDBusObjectPath(c->applicationMenuObjectPath()), actionId);
+    } else {
+        m_appmenuInterface->showMenu(p.x(), p.y(), c->applicationMenuServiceName(), QDBusObjectPath(c->applicationMenuObjectPath()), actionId, serial);
+    }
 }
 
 AbstractClient *ApplicationMenu::findAbstractClientWithApplicationMenu(const QString &serviceName, const QDBusObjectPath &menuObjectPath)

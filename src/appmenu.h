@@ -34,7 +34,7 @@ class ApplicationMenu : public QObject
 public:
     ~ApplicationMenu() override;
 
-    void showApplicationMenu(const QPoint &pos, AbstractClient *c, int actionId);
+    void showApplicationMenu(const QPoint &pos, AbstractClient *c, int actionId, unsigned int serial = 0);
 
     bool applicationMenuEnabled() const;
 

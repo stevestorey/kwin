@@ -6,6 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
+#include "appmenu.h"
 #include "decoratedclient.h"
 #include "decorationbridge.h"
 #include "decorationpalette.h"
@@ -14,10 +15,12 @@
 #include "composite.h"
 #include "cursor.h"
 #include "platform.h"
+#include "wayland_server.h"
 #include "workspace.h"
 
 #include <KDecoration2/DecoratedClient>
 #include <KDecoration2/Decoration>
+#include <KWaylandServer/seat_interface.h>
 
 #include <QDebug>
 #include <QStyle>
@@ -233,7 +236,11 @@ void DecoratedClientImpl::requestShowWindowMenu(const QRect &rect)
 
 void DecoratedClientImpl::requestShowApplicationMenu(const QRect &rect, int actionId)
 {
-    Workspace::self()->showApplicationMenu(rect, m_client, actionId);
+    if (waylandServer()) {
+        ApplicationMenu::self()->showApplicationMenu(m_client->pos() + rect.bottomLeft(), m_client, actionId, waylandServer()->seat()->pointerButtonSerial(Qt::LeftButton));
+    } else {
+        ApplicationMenu::self()->showApplicationMenu(m_client->pos() + rect.bottomLeft(), m_client, actionId);
+    }
 }
 
 void DecoratedClientImpl::showApplicationMenu(int actionId)

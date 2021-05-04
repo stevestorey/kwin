@@ -8,6 +8,14 @@
         <arg name="objectPath" type="o" direction="in"/>
         <arg name="actionId" type="i" direction="in"/>
     </method>
+    <method name="showMenu">
+        <arg name="x" type="i" direction="in"/>
+        <arg name="y" type="i" direction="in"/>
+        <arg name="service" type="s" direction="in"/>
+        <arg name="objectPath" type="o" direction="in"/>
+        <arg name="actionId" type="i" direction="in"/>
+        <arg name="serial" type="u" direction="in"/>
+    </method>
     <method name="reconfigure">
     </method>
     <signal name="reconfigured" />
