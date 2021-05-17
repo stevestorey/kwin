@@ -40,12 +40,18 @@ public:
      * Sets the necessary initial drm properties for the pipeline to work
      */
     void setup();
+    void addOutput(DrmConnector *conn, DrmCrtc *crtc, DrmPlane *primaryPlane);
 
     /**
      * checks if the connector(s) and plane(s) are set to the CRTC(s)
      * always returns false in legacy mode
      */
     bool isConnected() const;
+
+    /**
+     * checks if all tiles of the display are included in this Pipeline
+     */
+    bool isComplete() const;
 
     /**
      * tests the pending commit first and commits it if the test passes
@@ -74,9 +80,9 @@ public:
     bool isCursorVisible() const;
     QPoint cursorPos() const;
 
-    DrmConnector *connector() const;
-    DrmCrtc *crtc() const;
-    DrmPlane *primaryPlane() const;
+    QVector<DrmConnector*> connectors() const;
+    QVector<DrmCrtc*> crtcs() const;
+    QVector<DrmPlane*> primaryPlanes() const;
 
     DrmBuffer *currentBuffer() const;
 
@@ -90,6 +96,19 @@ public:
 
     void setOutput(DrmOutput *output);
     DrmOutput *output() const;
+
+    struct Mode {
+        QSize size;
+        uint32_t refreshRate;
+        bool preferred;
+    };
+    QVector<Mode> modeList() const;
+    Mode currentMode() const;
+    int modeIndex() const;
+    int tilingGroup() const;
+
+    bool vrrCapable() const;
+    bool hasOverscan() const;
 
     enum class CommitMode {
         Test,
@@ -105,15 +124,16 @@ private:
     bool atomicCommit();
     bool presentLegacy();
     bool checkTestBuffer();
+    QSize rotated(const QSize &size) const;
 
     bool setPendingTransformation(const DrmPlane::Transformations &transformation);
 
     DrmOutput *m_output = nullptr;
     DrmGpu *m_gpu = nullptr;
-    DrmConnector *m_connector = nullptr;
-    DrmCrtc *m_crtc = nullptr;
+    QVector<DrmConnector*> m_connectors;
+    QVector<DrmCrtc*> m_crtcs;
 
-    DrmPlane *m_primaryPlane = nullptr;
+    QVector<DrmPlane*> m_primaryPlanes;
     QSharedPointer<DrmBuffer> m_primaryBuffer;
     QSharedPointer<DrmBuffer> m_oldTestBuffer;
 
@@ -126,7 +146,6 @@ private:
         bool dirtyBo = true;
         bool dirtyPos = true;
     } m_cursor;
-
     QVector<DrmObject*> m_allObjects;
 
     int m_lastFlags = 0;

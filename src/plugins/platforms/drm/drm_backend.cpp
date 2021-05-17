@@ -386,7 +386,7 @@ void DrmBackend::updateOutputs()
         if (da && !db) {
             return true;
         } else if (da && db) {
-            return da->pipeline()->connector()->id() < db->pipeline()->connector()->id();
+            return da->pipeline()->connectors().constFirst()->id() < db->pipeline()->connectors().constFirst()->id();
         } else {
             return false;
         }

@@ -50,7 +50,7 @@ public:
     void pageFlipped();
     bool isDpmsEnabled() const override;
 
-    DrmConnector *connector() const;
+    QVector<DrmConnector *> connectors() const;
     DrmPipeline *pipeline() const;
     void setPipeline(DrmPipeline *pipeline);
 
@@ -84,7 +84,7 @@ private:
     void setRgbRange(RgbRange range) override;
 
     DrmPipeline *m_pipeline;
-    DrmConnector *m_connector;
+    QVector<DrmConnector *> m_connectors;
 
     QSharedPointer<DrmDumbBuffer> m_cursor;
     bool m_pageFlipPending = false;

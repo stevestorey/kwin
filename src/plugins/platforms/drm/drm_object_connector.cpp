@@ -41,6 +41,7 @@ DrmConnector::DrmConnector(DrmGpu *gpu, uint32_t connectorId)
                 QByteArrayLiteral("Full"),
                 QByteArrayLiteral("Limited 16:235")
             }),
+            PropertyDefinition(QByteArrayLiteral("TILE"), Requirement::Optional),
         }, DRM_MODE_OBJECT_CONNECTOR)
     , m_conn(drmModeGetConnector(gpu->fd(), connectorId))
 {
@@ -112,6 +113,19 @@ bool DrmConnector::init()
         qCDebug(KWIN_DRM) << "Could not find edid for connector" << this;
     }
     deleteProp(PropertyIndex::Edid);
+
+    // tiling info
+    auto tilingProp = getProp(PropertyIndex::Tile);
+    if (tilingProp && tilingProp->currentBlob() && tilingProp->currentBlob()->data) {
+        sscanf(static_cast<char*>(tilingProp->currentBlob()->data), "%d:%d:%d:%d:%d:%d:%d:%d",
+               &m_tilingInfo.group_id, &m_tilingInfo.flags, &m_tilingInfo.num_tiles_x, &m_tilingInfo.num_tiles_y,
+               &m_tilingInfo.loc_x, &m_tilingInfo.loc_y, &m_tilingInfo.tile_width, &m_tilingInfo.tile_height);
+        if (m_tilingInfo.group_id >= 0) {
+            qCDebug(KWIN_DRM, "Connector is tiled. Group=%d, x=%d, y=%d, w=%d, h=%d, num_x=%d, num_y=%d", m_tilingInfo.group_id, m_tilingInfo.loc_x, m_tilingInfo.loc_y,
+                    m_tilingInfo.tile_width, m_tilingInfo.tile_height, m_tilingInfo.num_tiles_x, m_tilingInfo.num_tiles_y);
+        }
+    }
+    deleteProp(PropertyIndex::Tile);
 
     // check the physical size
     if (m_edid.physicalSize().isEmpty()) {
@@ -196,12 +210,12 @@ QSize DrmConnector::physicalSize() const
 
 const DrmConnector::Mode &DrmConnector::currentMode() const
 {
-    return m_modes[m_modeIndex];
+    return m_modes[m_pendingModeIndex];
 }
 
-int DrmConnector::currentModeIndex() const
+int DrmConnector::modeIndex() const
 {
-    return m_modeIndex;
+    return m_pendingModeIndex;
 }
 
 const QVector<DrmConnector::Mode> &DrmConnector::modes()
@@ -211,7 +225,7 @@ const QVector<DrmConnector::Mode> &DrmConnector::modes()
 
 void DrmConnector::setModeIndex(int index)
 {
-    m_modeIndex = index;
+    m_pendingModeIndex = index;
 }
 
 static bool checkIfEqual(drmModeModeInfo one, drmModeModeInfo two)
@@ -235,6 +249,7 @@ void DrmConnector::findCurrentMode(drmModeModeInfo currentMode)
     for (int i = 0; i < m_modes.count(); i++) {
         if (checkIfEqual(m_modes[i].mode, currentMode)) {
             m_modeIndex = i;
+            m_pendingModeIndex = i;
             return;
         }
     }
@@ -341,6 +356,41 @@ bool DrmConnector::updateProperties()
     }
     m_conn.reset(drmModeGetConnector(gpu()->fd(), id()));
     return m_conn != nullptr;
+}
+
+const DrmConnector::TilingInfo &DrmConnector::tilingInfo() const
+{
+    return m_tilingInfo;
+}
+
+bool DrmConnector::isTiled() const
+{
+    return m_tilingInfo.group_id >= 0;
+}
+
+void DrmConnector::commitPending()
+{
+    m_modeIndex = m_pendingModeIndex;
+    DrmObject::commitPending();
+}
+
+void DrmConnector::rollbackPending()
+{
+    m_pendingModeIndex = m_modeIndex;
+    DrmObject::rollbackPending();
+}
+
+QPoint DrmConnector::tilePos() const
+{
+    const QSize size = currentMode().size;
+    QSize singleTileSize(size.width() / m_tilingInfo.tile_width, size.height() / m_tilingInfo.tile_height);// size of a 1x1 tile
+    return QPoint(singleTileSize.width() * m_tilingInfo.loc_x, singleTileSize.height() * m_tilingInfo.loc_y);
+}
+
+QSize DrmConnector::totalModeSize(int modeIndex) const
+{
+    const QSize size = m_modes[modeIndex].size;
+    return QSize((size.width() * m_tilingInfo.num_tiles_x) / m_tilingInfo.tile_width, (size.height() * m_tilingInfo.num_tiles_y) / m_tilingInfo.tile_height);
 }
 
 }

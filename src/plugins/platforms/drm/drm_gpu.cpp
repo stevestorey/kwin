@@ -247,7 +247,7 @@ bool DrmGpu::updateOutputs()
                 // try setting hardware rotation
                 output->updateTransform(output->transform());
             } else {
-                qCDebug(KWIN_DRM).nospace() << "New output on GPU " << m_devNode << ": " << pipeline->connector()->modelName();
+                qCDebug(KWIN_DRM).nospace() << "New output on GPU " << m_devNode << ": " << pipeline->connectors().first()->modelName();
                 if (!output->initCursor(m_cursorSize)) {
                     m_backend->setSoftwareCursorForced(true);
                 }
@@ -325,7 +325,10 @@ QVector<DrmPipeline *> DrmGpu::findWorkingCombination(const QVector<DrmPipeline 
 bool DrmGpu::commitCombination(const QVector<DrmPipeline *> &pipelines)
 {
     for (const auto &pipeline : pipelines) {
-        auto output = findOutput(pipeline->connector()->id());
+        // FIXME find output that has one or more of the connectors?
+        // -> simply destroy outputs that are tiled but not complete before this method call?
+        // -> better, keep all outputs but replace them if a fully tiled one comes along?
+        auto output = findOutput(pipeline->connectors().constFirst()->id());
         if (output) {
             output->setPipeline(pipeline);
             pipeline->setOutput(output);
@@ -352,7 +355,8 @@ bool DrmGpu::commitCombination(const QVector<DrmPipeline *> &pipelines)
 DrmOutput *DrmGpu::findOutput(quint32 connector)
 {
     auto it = std::find_if(m_drmOutputs.constBegin(), m_drmOutputs.constEnd(), [connector] (DrmOutput *o) {
-        return o->connector()->id() == connector;
+        const auto &cons = o->connectors();
+        return std::find_if(cons.constBegin(), cons.constEnd(), [connector](const auto &c){return c->id() == connector;}) != cons.constEnd();
     });
     if (it != m_drmOutputs.constEnd()) {
         return *it;

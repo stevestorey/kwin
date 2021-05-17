@@ -40,19 +40,19 @@ namespace KWin
 DrmOutput::DrmOutput(DrmGpu *gpu, DrmPipeline *pipeline)
     : DrmAbstractOutput(gpu)
     , m_pipeline(pipeline)
-    , m_connector(pipeline->connector())
+    , m_connectors(pipeline->connectors())
 {
     m_pipeline->setOutput(this);
-    auto conn = m_pipeline->connector();
+    auto conn = m_pipeline->connectors().constFirst();
     m_renderLoop->setRefreshRate(conn->currentMode().refreshRate);
     setSubPixelInternal(conn->subpixel());
     setInternal(conn->isInternal());
     setCapabilityInternal(DrmOutput::Capability::Dpms);
-    if (conn->hasOverscan()) {
+    if (m_pipeline->hasOverscan()) {
         setCapabilityInternal(Capability::Overscan);
         setOverscanInternal(conn->overscan());
     }
-    if (conn->vrrCapable()) {
+    if (m_pipeline->vrrCapable()) {
         setCapabilityInternal(Capability::Vrr);
         setVrrPolicy(RenderLoop::VrrPolicy::Automatic);
     }
@@ -187,18 +187,16 @@ bool DrmOutput::moveCursor()
 QVector<AbstractWaylandOutput::Mode> DrmOutput::getModes() const
 {
     bool modeFound = false;
+    auto modelist = m_pipeline->modeList();
     QVector<Mode> modes;
-    auto conn = m_pipeline->connector();
-    auto modelist = conn->modes();
-
     modes.reserve(modelist.count());
     for (int i = 0; i < modelist.count(); ++i) {
         Mode mode;
-        if (i == conn->currentModeIndex()) {
+        if (i == m_pipeline->modeIndex()) {
             mode.flags |= ModeFlag::Current;
             modeFound = true;
         }
-        if (modelist[i].mode.type & DRM_MODE_TYPE_PREFERRED) {
+        if (modelist[i].preferred) {
             mode.flags |= ModeFlag::Preferred;
         }
 
@@ -216,7 +214,7 @@ QVector<AbstractWaylandOutput::Mode> DrmOutput::getModes() const
 
 void DrmOutput::initOutputDevice()
 {
-    const auto conn = m_pipeline->connector();
+    auto conn = m_pipeline->connectors().constFirst();
     setName(conn->connectorName());
     initialize(conn->modelName(), conn->edid()->manufacturerString(),
                conn->edid()->eisaId(), conn->edid()->serialNumber(),
@@ -326,7 +324,7 @@ void DrmOutput::updateTransform(Transform transform)
 
 void DrmOutput::updateModes()
 {
-    auto conn = m_pipeline->connector();
+    auto conn = m_pipeline->connectors().first();
     conn->updateModes();
 
     const auto modes = getModes();
@@ -353,12 +351,11 @@ bool DrmOutput::needsSoftwareTransformation() const
 
 void DrmOutput::updateMode(const QSize &size, uint32_t refreshRate)
 {
-    auto conn = m_pipeline->connector();
-    if (conn->currentMode().size == size && conn->currentMode().refreshRate == refreshRate) {
+    auto mode = m_pipeline->currentMode();
+    if (mode.size == size && mode.refreshRate == refreshRate) {
         return;
     }
-    // try to find a fitting mode
-    auto modelist = conn->modes();
+    auto modelist = m_pipeline->modeList();
     for (int i = 0; i < modelist.size(); i++) {
         if (modelist[i].size == size && modelist[i].refreshRate == refreshRate) {
             applyMode(i);
@@ -371,11 +368,10 @@ void DrmOutput::updateMode(const QSize &size, uint32_t refreshRate)
 
 void DrmOutput::applyMode(int modeIndex)
 {
-    if (m_pipeline->modeset(modeIndex)) {
-        auto mode = m_pipeline->connector()->currentMode();
-        AbstractWaylandOutput::setCurrentModeInternal(mode.size, mode.refreshRate);
-        m_renderLoop->setRefreshRate(mode.refreshRate);
-    }
+    m_pipeline->modeset(modeIndex);
+    auto mode = m_pipeline->currentMode();
+    AbstractWaylandOutput::setCurrentModeInternal(mode.size, mode.refreshRate);
+    m_renderLoop->setRefreshRate(mode.refreshRate);
 }
 
 void DrmOutput::pageFlipped()
@@ -405,7 +401,7 @@ bool DrmOutput::present(const QSharedPointer<DrmBuffer> &buffer, QRegion damaged
 
 int DrmOutput::gammaRampSize() const
 {
-    return m_pipeline->crtc()->gammaRampSize();
+    return m_pipeline->crtcs().first()->gammaRampSize();
 }
 
 bool DrmOutput::setGammaRamp(const GammaRamp &gamma)
@@ -426,9 +422,9 @@ void DrmOutput::setOverscan(uint32_t overscan)
     }
 }
 
-DrmConnector *DrmOutput::connector() const
+QVector<DrmConnector*> DrmOutput::connectors() const
 {
-    return m_connector;
+    return m_connectors;
 }
 
 DrmPipeline *DrmOutput::pipeline() const
@@ -475,7 +471,7 @@ void DrmOutput::setRgbRange(RgbRange range)
 
 void DrmOutput::setPipeline(DrmPipeline *pipeline)
 {
-    Q_ASSERT_X(!pipeline || pipeline->connector() == m_connector, "DrmOutput::setPipeline", "Pipeline with wrong connector set!");
+    Q_ASSERT_X(!pipeline || pipeline->connectors() == m_connectors, "DrmOutput::setPipeline", "Pipeline with wrong connector set!");
     m_pipeline = pipeline;
 }
 

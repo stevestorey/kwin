@@ -306,7 +306,7 @@ bool EglStreamBackend::resetOutput(Output &o)
     if (isPrimary()) {
         // dumb buffer used for modesetting
         o.buffer = QSharedPointer<DrmDumbBuffer>::create(m_gpu, sourceSize);
-        o.targetPlane = drmOutput->pipeline()->primaryPlane();
+        o.targetPlane = drmOutput->pipeline()->primaryPlanes().first();
 
         EGLAttrib streamAttribs[] = {
             EGL_STREAM_FIFO_LENGTH_KHR, 0, // mailbox mode
@@ -475,7 +475,7 @@ PlatformSurfaceTexture *EglStreamBackend::createPlatformSurfaceTextureWayland(Su
 
 bool EglStreamBackend::needsReset(const Output &o) const
 {
-    if (o.targetPlane != o.output->pipeline()->primaryPlane()) {
+    if (o.targetPlane != o.output->pipeline()->primaryPlanes().first()) {
         return true;
     }
     QSize surfaceSize = o.dumbSwapchain ? o.dumbSwapchain->size() : o.buffer->size();
