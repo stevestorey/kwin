@@ -800,6 +800,23 @@ QPointF PointerInputRedirection::applyPointerConfinement(const QPointF &pos) con
     return m_pos;
 }
 
+QPointF PointerInputRedirection::applyMoveResizeConfinement(const QPointF &pos)
+{
+    if (workspace()->moveResizeClient() && workspace()->moveResizeClient()->isInteractiveMove()) {
+        std::chrono::nanoseconds now = std::chrono::system_clock::now().time_since_epoch();
+        auto speed = (pos - m_pos).manhattanLength() / ((now - m_lastMoveResizeTime).count() * 0.000'000'001);
+        m_lastMoveResizeTime = now;
+        if (speed < 5000) {
+            const QRectF currentScreenGeometry = screens()->geometry(screens()->number(m_pos.toPoint()));
+            return QPointF(
+                std::clamp(pos.x(), currentScreenGeometry.left() + 1, currentScreenGeometry.right() - 1),
+                std::clamp(pos.y(), currentScreenGeometry.top() + 1, currentScreenGeometry.bottom() - 1)
+            );
+        }
+    }
+    return pos;
+}
+
 void PointerInputRedirection::updatePosition(const QPointF &pos)
 {
     if (m_locked) {
@@ -816,6 +833,7 @@ void PointerInputRedirection::updatePosition(const QPointF &pos)
             p = confineToBoundingBox(p, currentScreenGeometry);
         }
     }
+    p = applyMoveResizeConfinement(p);
     p = applyPointerConfinement(p);
     if (p == m_pos) {
         // didn't change due to confinement

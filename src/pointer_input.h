@@ -19,6 +19,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QPointF>
+#include <chrono>
 
 class QWindow;
 
@@ -145,6 +146,7 @@ private:
     void updateButton(uint32_t button, InputRedirection::PointerButtonState state);
     void warpXcbOnSurfaceLeft(KWaylandServer::SurfaceInterface *surface);
     QPointF applyPointerConfinement(const QPointF &pos) const;
+    QPointF applyMoveResizeConfinement(const QPointF &pos);
     void disconnectConfinedPointerRegionConnection();
     void disconnectLockedPointerAboutToBeUnboundConnection();
     void disconnectPointerConstraintsConnection();
@@ -164,6 +166,7 @@ private:
     bool m_confined = false;
     bool m_locked = false;
     bool m_enableConstraints = true;
+    std::chrono::nanoseconds m_lastMoveResizeTime;
 };
 
 class WaylandCursorImage : public QObject
