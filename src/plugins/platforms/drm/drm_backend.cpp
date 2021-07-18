@@ -45,6 +45,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSocketNotifier>
+#include <QStringBuilder>
 // system
 #include <algorithm>
 #include <sys/stat.h>
@@ -65,7 +66,11 @@ DrmBackend::DrmBackend(QObject *parent)
     : Platform(parent)
     , m_udev(new Udev)
     , m_udevMonitor(m_udev->monitor())
+#ifdef KWIN_UNIT_TEST
+    , m_session(Session::create(Session::Type::Noop, this))
+#else
     , m_session(Session::create(this))
+#endif
     , m_explicitGpus(qEnvironmentVariable("KWIN_DRM_DEVICES").split(':', Qt::SkipEmptyParts))
     , m_dpmsFilter()
 {

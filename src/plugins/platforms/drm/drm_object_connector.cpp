@@ -120,6 +120,7 @@ bool DrmConnector::init()
         m_physicalSize = m_edid.physicalSize();
     }
 
+#ifndef KWIN_UNIT_TEST
     // the size might be completely borked. E.g. Samsung SyncMaster 2494HS reports 160x90 while in truth it's 520x292
     // as this information is used to calculate DPI info, it's going to result in everything being huge
     const QByteArray unknown = QByteArrayLiteral("unknown");
@@ -131,6 +132,7 @@ bool DrmConnector::init()
         qCWarning(KWIN_DRM) << "Overwriting monitor physical size for" << m_edid.eisaId() << "/" << m_edid.monitorName() << "/" << m_edid.serialNumber() << " from " << m_physicalSize << "to " << overwriteSize;
         m_physicalSize = overwriteSize;
     }
+#endif
 
     // init modes
     updateModes();

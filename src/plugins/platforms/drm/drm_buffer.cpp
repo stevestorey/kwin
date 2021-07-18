@@ -86,10 +86,14 @@ bool DrmDumbBuffer::map(QImage::Format format)
     if (drmIoctl(m_gpu->fd(), DRM_IOCTL_MODE_MAP_DUMB, &mapArgs) != 0) {
         return false;
     }
+#ifndef KWIN_UNIT_TEST
     void *address = mmap(nullptr, m_bufferSize, PROT_WRITE, MAP_SHARED, m_gpu->fd(), mapArgs.offset);
     if (address == MAP_FAILED) {
         return false;
     }
+#else
+    void *address = reinterpret_cast<void*>(mapArgs.offset);
+#endif
     m_memory = address;
     m_image = new QImage((uchar*)m_memory, m_size.width(), m_size.height(), m_stride, format);
     return !m_image->isNull();

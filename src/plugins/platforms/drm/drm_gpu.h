@@ -103,15 +103,13 @@ public:
     DrmVirtualOutput *createVirtualOutput();
     void removeVirtualOutput(DrmVirtualOutput *output);
 
+    bool updateOutputs();
+
 Q_SIGNALS:
     void outputAdded(DrmAbstractOutput *output);
     void outputRemoved(DrmAbstractOutput *output);
     void outputEnabled(DrmAbstractOutput *output);
     void outputDisabled(DrmAbstractOutput *output);
-
-protected:
-    friend class DrmBackend;
-    bool updateOutputs();
 
 private:
     void dispatchEvents();
