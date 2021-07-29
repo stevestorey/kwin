@@ -231,6 +231,16 @@ void EffectQuickView::forwardKeyEvent(QKeyEvent *keyEvent)
     QCoreApplication::sendEvent(d->m_view, keyEvent);
 }
 
+void EffectQuickView::forwardTouchEvent(QTouchEvent *e)
+{
+    if (!d->m_visible) {
+        return;
+    }
+    QTouchEvent copy = *e;
+    QCoreApplication::sendEvent(d->m_view, &copy);
+}
+
+
 QRect EffectQuickView::geometry() const
 {
     return d->m_view->geometry();

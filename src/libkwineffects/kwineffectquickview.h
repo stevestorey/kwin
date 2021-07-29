@@ -21,9 +21,7 @@
 
 class QKeyEvent;
 class QMouseEvent;
-
-class QMouseEvent;
-class QKeyEvent;
+class QTouchEvent;
 
 class QQmlContext;
 class QQuickItem;
@@ -126,6 +124,8 @@ public:
      * If it is handled the event will be accepted
      */
     void forwardKeyEvent(QKeyEvent *keyEvent);
+
+    void forwardTouchEvent(QTouchEvent *event);
 
 Q_SIGNALS:
     /**
