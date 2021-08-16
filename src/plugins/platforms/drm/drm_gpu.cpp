@@ -456,6 +456,7 @@ void DrmGpu::removeOutput(DrmOutput *output)
     auto pipeline = output->m_pipeline;
     delete output;
     m_connectors.removeOne(pipeline->connector());
+    delete pipeline->connector();
     if (pipeline->primaryPlane()) {
         m_unusedPlanes << pipeline->primaryPlane();
     }
