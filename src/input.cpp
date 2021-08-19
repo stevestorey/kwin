@@ -2131,6 +2131,7 @@ InputRedirection::InputRedirection(QObject *parent)
     qRegisterMetaType<KWin::InputRedirection::PointerAxis>();
     if (Application::usesLibinput()) {
         setupLibInput();
+        setupEmulatedInput();
     }
     connect(kwinApp(), &Application::workspaceCreated, this, &InputRedirection::setupWorkspace);
 }
@@ -2556,7 +2557,7 @@ void InputRedirection::setupTouchpadShortcuts()
 
 void InputRedirection::setupEmulatedInput()
 {
-#ifdef HAVE_LIBEIS
+#ifdef KWIN_BUILD_EIS
     auto connection = LibEis::Connection::create();
     connect(connection, &LibEis::Connection::pointerMoved, this, [this](const QSizeF &delta) {
         m_pointer->processMotion(globalPointer() + QPointF(delta.width(), delta.height()), 0);
