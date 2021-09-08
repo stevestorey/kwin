@@ -778,22 +778,6 @@ void Workspace::addShellClient(AbstractClient *client)
     setupClientConnections(client);
     client->updateLayer();
 
-    if (client->isPlaceable()) {
-        const QRect area = clientArea(PlacementArea, client, activeOutput());
-        bool placementDone = false;
-        if (client->isRequestedFullScreen()) {
-            placementDone = true;
-        }
-        if (client->maximizeMode() == MaximizeMode::MaximizeFull) {
-            placementDone = true;
-        }
-        if (client->rules()->checkPosition(invalidPoint, true) != invalidPoint) {
-            placementDone = true;
-        }
-        if (!placementDone) {
-            client->placeIn(area);
-        }
-    }
     m_allClients.append(client);
     addToStack(client);
 

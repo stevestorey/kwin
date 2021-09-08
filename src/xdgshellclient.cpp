@@ -738,6 +738,7 @@ void XdgToplevelClient::handleRoleCommit()
         handleStatesAcknowledged(configureEvent->states);
     }
     updateDecoration(true, false);
+    finishInitialize();
 }
 
 void XdgToplevelClient::doMinimize()
@@ -1235,6 +1236,43 @@ void XdgToplevelClient::initialize()
     setupWindowManagementInterface();
 
     m_isInitialized = true;
+}
+
+void XdgToplevelClient::finishInitialize()
+{
+    if (!m_isPlaced && isPlaceable()) {
+        m_isPlaced = true;
+        const QRect area = workspace()->clientArea(PlacementArea, this, workspace()->activeOutput());
+
+        // If the window is larger than the placement area, maximize it. Ideally, we should
+        // not need it but there is no way for the compositor to indicate the maximimum size.
+        // See https://gitlab.freedesktop.org/wayland/wayland-protocols/-/merge_requests/41
+        MaximizeMode maximizeMode = requestedMaximizeMode();
+        if (area.width() < width()) {
+            maximizeMode = MaximizeMode(maximizeMode | MaximizeHorizontal);
+        } else if (area.height() < height()) {
+            maximizeMode = MaximizeMode(maximizeMode | MaximizeVertical);
+        }
+        if (maximizeMode != requestedMaximizeMode()) {
+            maximize(maximizeMode);
+        }
+
+        // If the window is not maximized or in fullscreen mode or its position is not forced
+        // using a window rule, place it as usual.
+        bool placementDone = false;
+        if (isRequestedFullScreen()) {
+            placementDone = true;
+        }
+        if (requestedMaximizeMode() != MaximizeMode::MaximizeRestore) {
+            placementDone = true;
+        }
+        if (rules()->checkPosition(invalidPoint, true) != invalidPoint) {
+            placementDone = true;
+        }
+        if (!placementDone) {
+            placeIn(area);
+        }
+    }
 }
 
 void XdgToplevelClient::updateMaximizeMode(MaximizeMode maximizeMode)

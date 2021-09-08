@@ -188,6 +188,7 @@ private:
     void handleMaximumSizeChanged();
     void handleMinimumSizeChanged();
     void initialize();
+    void finishInitialize();
     void updateMaximizeMode(MaximizeMode maximizeMode);
     void updateFullScreenMode(bool set);
     void updateShowOnScreenEdge();
@@ -213,6 +214,7 @@ private:
     bool m_isRequestedFullScreen = false;
     bool m_isInitialized = false;
     bool m_userNoBorder = false;
+    bool m_isPlaced = false;
     bool m_isTransient = false;
     QPointer<AbstractOutput> m_fullScreenRequestedOutput;
 };
