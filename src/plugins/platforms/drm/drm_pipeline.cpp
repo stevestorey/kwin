@@ -201,9 +201,13 @@ bool DrmPipeline::populateAtomicValues(drmModeAtomicReq *req, uint32_t &flags)
     }
     m_lastFlags = flags;
 
-    auto modeSize = m_connector->currentMode().size;
-    m_primaryPlane->set(QPoint(0, 0), m_primaryBuffer ? m_primaryBuffer->size() : modeSize, QPoint(0, 0), modeSize);
-    m_primaryPlane->setBuffer(m_active ? m_primaryBuffer.get() : nullptr);
+    if (m_active) {
+        m_primaryPlane->set(QPoint(0, 0), m_primaryBuffer->size(), QPoint(0, 0), m_primaryBuffer->size());
+        m_primaryPlane->setBuffer(m_primaryBuffer.data());
+    } else {
+        m_primaryPlane->setBuffer(nullptr);
+    }
+
     for (const auto &obj : qAsConst(m_allObjects)) {
         if (!obj->atomicPopulate(req)) {
             return false;
