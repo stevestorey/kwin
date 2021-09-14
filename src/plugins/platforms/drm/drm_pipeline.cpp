@@ -64,7 +64,6 @@ void DrmPipeline::setup()
     auto mode = m_connector->currentMode();
     m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::ModeId, &mode.mode, sizeof(drmModeModeInfo));
     m_primaryPlane->setPending(DrmPlane::PropertyIndex::CrtcId, m_crtc->id());
-    m_primaryPlane->set(QPoint(0, 0), sourceSize(), QPoint(0, 0), mode.size);
     m_primaryPlane->setTransformation(DrmPlane::Transformation::Rotate0);
 }
 
