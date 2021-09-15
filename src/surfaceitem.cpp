@@ -122,7 +122,6 @@ void SurfaceItem::discardPixmap()
         if (m_pixmap->isValid()) {
             m_previousPixmap.reset(m_pixmap.take());
             m_previousPixmap->markAsDiscarded();
-            m_referencePixmapCounter++;
         } else {
             m_pixmap.reset();
         }
