@@ -145,6 +145,7 @@ Compositor::Compositor(QObject* workspace)
             }
         }, Qt::QueuedConnection
     );
+    connect(kwinApp()->platform(), &Platform::screensQueried, this, &Compositor::addRepaintFull);
 
     // register DBus
     new CompositorDBusInterface(this);
