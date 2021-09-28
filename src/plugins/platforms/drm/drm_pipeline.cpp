@@ -60,9 +60,9 @@ void DrmPipeline::setup()
         m_connector->setPending(DrmConnector::PropertyIndex::CrtcId, m_crtc->id());
         m_crtc->setPending(DrmCrtc::PropertyIndex::Active, 1);
         auto mode = m_connector->currentMode();
-        m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::ModeId, &mode.mode, sizeof(drmModeModeInfo));
+        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
         m_primaryPlane->setPending(DrmPlane::PropertyIndex::CrtcId, m_crtc->id());
-        m_primaryPlane->set(QPoint(0, 0), sourceSize(), QPoint(0, 0), mode.size);
+        m_primaryPlane->set(QPoint(0, 0), sourceSize(), QPoint(0, 0), mode->size());
         m_primaryPlane->setTransformation(DrmPlane::Transformation::Rotate0);
         m_formats = m_primaryPlane->formats();
     } else {
@@ -195,7 +195,7 @@ bool DrmPipeline::populateAtomicValues(drmModeAtomicReq *req, uint32_t &flags)
     }
     m_lastFlags = flags;
 
-    auto modeSize = m_connector->currentMode().size;
+    auto modeSize = m_connector->currentMode()->size();
     m_primaryPlane->set(QPoint(0, 0), m_primaryBuffer ? m_primaryBuffer->size() : modeSize, QPoint(0, 0), modeSize);
     m_primaryPlane->setBuffer(isActive() ? m_primaryBuffer.get() : nullptr);
     for (const auto &obj : qAsConst(m_allObjects)) {
@@ -224,11 +224,11 @@ bool DrmPipeline::modeset(int modeIndex)
 {
     int oldModeIndex = m_connector->currentModeIndex();
     m_connector->setModeIndex(modeIndex);
-    auto mode = m_connector->currentMode().mode;
+    DrmConnectorMode *mode = m_connector->currentMode();
     if (m_gpu->atomicModeSetting()) {
-        m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::ModeId, &mode, sizeof(drmModeModeInfo));
+        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
         if (m_connector->hasOverscan()) {
-            m_connector->setOverscan(m_connector->overscan(), m_connector->currentMode().size);
+            m_connector->setOverscan(m_connector->overscan(), mode->size());
         }
         bool works = test();
         // hardware rotation could fail in some modes, try again with soft rotation if possible
@@ -236,9 +236,9 @@ bool DrmPipeline::modeset(int modeIndex)
             && transformation() != DrmPlane::Transformations(DrmPlane::Transformation::Rotate0)
             && setPendingTransformation(DrmPlane::Transformation::Rotate0)) {
             // values are reset on the failing test, set them again
-            m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::ModeId, &mode, sizeof(drmModeModeInfo));
+            m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
             if (m_connector->hasOverscan()) {
-                m_connector->setOverscan(m_connector->overscan(), m_connector->currentMode().size);
+                m_connector->setOverscan(m_connector->overscan(), mode->size());
             }
             works = test();
         }
@@ -249,7 +249,7 @@ bool DrmPipeline::modeset(int modeIndex)
         }
     } else {
         uint32_t connId = m_connector->id();
-        if (!checkTestBuffer() || drmModeSetCrtc(m_gpu->fd(), m_crtc->id(), m_primaryBuffer->bufferId(), 0, 0, &connId, 1, &mode) != 0) {
+        if (!checkTestBuffer() || drmModeSetCrtc(m_gpu->fd(), m_crtc->id(), m_primaryBuffer->bufferId(), 0, 0, &connId, 1, mode->nativeMode()) != 0) {
             qCWarning(KWIN_DRM) << "Modeset failed!" << strerror(errno);
             m_connector->setModeIndex(oldModeIndex);
             m_primaryBuffer = m_oldTestBuffer;
@@ -363,11 +363,11 @@ bool DrmPipeline::setActive(bool active)
         m_cursor.dirtyPos = true;
     }
     bool success = false;
-    auto mode = m_connector->currentMode().mode;
     if (m_gpu->atomicModeSetting()) {
+        DrmConnectorMode *mode = m_connector->currentMode();
         m_connector->setPending(DrmConnector::PropertyIndex::CrtcId, active ? m_crtc->id() : 0);
         m_crtc->setPending(DrmCrtc::PropertyIndex::Active, active);
-        m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::ModeId, active ? &mode : nullptr, sizeof(drmModeModeInfo));
+        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, active ? mode->blobId() : 0);
         m_primaryPlane->setPending(DrmPlane::PropertyIndex::CrtcId, active ? m_crtc->id() : 0);
         if (active) {
             success = test();
@@ -468,7 +468,7 @@ bool DrmPipeline::setOverscan(uint32_t overscan)
     if (overscan > 100 || (overscan != 0 && !m_connector->hasOverscan())) {
         return false;
     }
-    m_connector->setOverscan(overscan, m_connector->currentMode().size);
+    m_connector->setOverscan(overscan, m_connector->currentMode()->size());
     return test();
 }
 
@@ -486,9 +486,9 @@ QSize DrmPipeline::sourceSize() const
 {
     auto mode = m_connector->currentMode();
     if (transformation() & (DrmPlane::Transformation::Rotate90 | DrmPlane::Transformation::Rotate270)) {
-        return mode.size.transposed();
+        return mode->size().transposed();
     }
-    return mode.size;
+    return mode->size();
 }
 
 DrmPlane::Transformations DrmPipeline::transformation() const
@@ -507,7 +507,7 @@ bool DrmPipeline::isActive() const
 
 bool DrmPipeline::isCursorVisible() const
 {
-    return m_cursor.buffer && QRect(m_cursor.pos, m_cursor.buffer->size()).intersects(QRect(QPoint(0, 0), m_connector->currentMode().size));
+    return m_cursor.buffer && QRect(m_cursor.pos, m_cursor.buffer->size()).intersects(QRect(QPoint(0, 0), m_connector->currentMode()->size()));
 }
 
 QPoint DrmPipeline::cursorPos() const
