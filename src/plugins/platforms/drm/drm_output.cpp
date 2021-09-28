@@ -41,7 +41,7 @@ DrmOutput::DrmOutput(DrmGpu *gpu, DrmPipeline *pipeline)
 {
     m_pipeline->setOutput(this);
     auto conn = m_pipeline->connector();
-    m_renderLoop->setRefreshRate(conn->currentMode().refreshRate);
+    m_renderLoop->setRefreshRate(conn->currentMode()->refreshRate());
     setSubPixelInternal(conn->subpixel());
     setInternal(conn->isInternal());
     setCapabilityInternal(DrmOutput::Capability::Dpms);
@@ -186,7 +186,7 @@ QVector<AbstractWaylandOutput::Mode> DrmOutput::getModes() const
     bool modeFound = false;
     QVector<Mode> modes;
     auto conn = m_pipeline->connector();
-    auto modelist = conn->modes();
+    QVector<DrmConnectorMode *> modelist = conn->modes();
 
     modes.reserve(modelist.count());
     for (int i = 0; i < modelist.count(); ++i) {
@@ -195,13 +195,13 @@ QVector<AbstractWaylandOutput::Mode> DrmOutput::getModes() const
             mode.flags |= ModeFlag::Current;
             modeFound = true;
         }
-        if (modelist[i].mode.type & DRM_MODE_TYPE_PREFERRED) {
+        if (modelist[i]->nativeMode()->type & DRM_MODE_TYPE_PREFERRED) {
             mode.flags |= ModeFlag::Preferred;
         }
 
         mode.id = i;
-        mode.size = modelist[i].size;
-        mode.refreshRate = modelist[i].refreshRate;
+        mode.size = modelist[i]->size();
+        mode.refreshRate = modelist[i]->refreshRate();
         modes << mode;
     }
     if (!modeFound) {
@@ -352,13 +352,13 @@ bool DrmOutput::needsSoftwareTransformation() const
 void DrmOutput::updateMode(const QSize &size, uint32_t refreshRate)
 {
     auto conn = m_pipeline->connector();
-    if (conn->currentMode().size == size && conn->currentMode().refreshRate == refreshRate) {
+    if (conn->currentMode()->size() == size && conn->currentMode()->refreshRate() == refreshRate) {
         return;
     }
     // try to find a fitting mode
     auto modelist = conn->modes();
     for (int i = 0; i < modelist.size(); i++) {
-        if (modelist[i].size == size && modelist[i].refreshRate == refreshRate) {
+        if (modelist[i]->size() == size && modelist[i]->refreshRate() == refreshRate) {
             applyMode(i);
             return;
         }
@@ -371,8 +371,8 @@ void DrmOutput::applyMode(int modeIndex)
 {
     if (m_pipeline->modeset(modeIndex)) {
         auto mode = m_pipeline->connector()->currentMode();
-        AbstractWaylandOutput::setCurrentModeInternal(mode.size, mode.refreshRate);
-        m_renderLoop->setRefreshRate(mode.refreshRate);
+        AbstractWaylandOutput::setCurrentModeInternal(mode->size(), mode->refreshRate());
+        m_renderLoop->setRefreshRate(mode->refreshRate());
     }
 }
 
