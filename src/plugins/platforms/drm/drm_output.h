@@ -46,7 +46,7 @@ public:
     bool updateCursor() override;
     bool moveCursor() override;
 
-    bool present(const QSharedPointer<DrmBuffer> &buffer, QRegion damagedRegion) override;
+    bool present(const QSharedPointer<DrmBuffer> &buffer, QRegion damagedRegion) override; // TODO(vlad): Port to transactional api.
     void pageFlipped();
 
     DrmConnector *connector() const;

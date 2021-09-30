@@ -80,60 +80,9 @@ bool DrmObject::initProps()
     return true;
 }
 
-bool DrmObject::atomicPopulate(drmModeAtomicReq *req) const
-{
-    for (const auto &property : qAsConst(m_props)) {
-        if (property && !property->isImmutable() && !property->isLegacy() && property->needsCommit()) {
-            if (drmModeAtomicAddProperty(req, m_id, property->propId(), property->pending()) <= 0) {
-                qCWarning(KWIN_DRM) << "Adding property" << property->name() << "->" << property->pending()
-                                    << "to atomic commit failed for object" << this << "with error" << strerror(errno);
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
 QVector<DrmObject::Property*> DrmObject::properties()
 {
     return m_props;
-}
-
-void DrmObject::commit()
-{
-    for (const auto &prop : qAsConst(m_props)) {
-        if (prop) {
-            prop->commit();
-        }
-    }
-}
-
-void DrmObject::commitPending()
-{
-    for (const auto &prop : qAsConst(m_props)) {
-        if (prop) {
-            prop->commitPending();
-        }
-    }
-}
-
-void DrmObject::rollbackPending()
-{
-    for (const auto &prop : qAsConst(m_props)) {
-        if (prop) {
-            prop->rollbackPending();
-        }
-    }
-}
-
-bool DrmObject::needsCommit() const
-{
-    for (const auto &prop : qAsConst(m_props)) {
-        if (prop && prop->needsCommit()) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool DrmObject::updateProperties()
@@ -208,30 +157,6 @@ uint64_t DrmObject::Property::pending() const
     return m_pending;
 }
 
-bool DrmObject::Property::setPendingBlob(void *blob, size_t length)
-{
-    if (!blob && !m_pendingBlob) {
-        return true;
-    }
-    if (blob && m_pendingBlob && length == m_pendingBlob->length && memcmp(blob, m_pendingBlob->data, length) == 0) {
-        return true;
-    }
-    uint32_t id = 0;
-    if (blob != nullptr) {
-        if (drmModeCreatePropertyBlob(m_obj->m_gpu->fd(), blob, length, &id) != 0) {
-            qCWarning(KWIN_DRM) << "Creating property blob failed!" << strerror(errno);
-            return false;
-        }
-    }
-    if (m_pendingBlob && m_pendingBlob != m_currentBlob && m_pendingBlob != m_nextBlob) {
-        drmModeDestroyPropertyBlob(m_obj->m_gpu->fd(), m_pendingBlob->id);
-        drmModeFreePropertyBlob(m_pendingBlob);
-    }
-    m_pending = id;
-    m_pendingBlob = drmModeGetPropertyBlob(m_obj->m_gpu->fd(), m_pending);
-    return true;
-}
-
 void DrmObject::Property::setCurrent(uint64_t value)
 {
     m_current = value;
@@ -240,62 +165,6 @@ void DrmObject::Property::setCurrent(uint64_t value)
 uint64_t DrmObject::Property::current() const
 {
     return m_current;
-}
-
-void DrmObject::Property::setCurrentBlob(drmModePropertyBlobRes *blob)
-{
-    if (m_currentBlob && m_currentBlob != m_pendingBlob && m_currentBlob != m_nextBlob && m_currentBlob != blob) {
-        drmModeDestroyPropertyBlob(m_obj->m_gpu->fd(), m_currentBlob->id);
-        drmModeFreePropertyBlob(m_currentBlob);
-    }
-    m_currentBlob = blob;
-    m_current = blob ? blob->id : 0;
-}
-
-void DrmObject::Property::commit()
-{
-    if (m_immutable || m_current == m_pending) {
-        return;
-    }
-    if (m_pendingBlob || m_currentBlob) {
-        setCurrentBlob(m_pendingBlob);
-    } else {
-        setCurrent(m_pending);
-    }
-}
-
-void DrmObject::Property::commitPending()
-{
-    if (m_immutable || m_next == m_pending) {
-        return;
-    }
-    if (m_pendingBlob || m_nextBlob) {
-        if (m_nextBlob && m_nextBlob != m_currentBlob) {
-            drmModeDestroyPropertyBlob(m_obj->m_gpu->fd(), m_nextBlob->id);
-            drmModeFreePropertyBlob(m_nextBlob);
-        }
-        m_next = m_pending;
-        m_nextBlob = m_pendingBlob;
-    } else {
-        m_next = m_pending;
-    }
-}
-
-void DrmObject::Property::rollbackPending()
-{
-    if (m_immutable || m_next == m_pending) {
-        return;
-    }
-    if (m_pendingBlob || m_nextBlob) {
-        if (m_pendingBlob && m_pendingBlob != m_currentBlob) {
-            drmModeDestroyPropertyBlob(m_obj->m_gpu->fd(), m_pendingBlob->id);
-            drmModeFreePropertyBlob(m_pendingBlob);
-        }
-        m_pending = m_next;
-        m_pendingBlob = m_nextBlob;
-    } else {
-        m_pending = m_next;
-    }
 }
 
 bool DrmObject::Property::needsCommit() const

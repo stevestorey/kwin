@@ -51,19 +51,244 @@ DrmPipeline::~DrmPipeline()
 {
 }
 
+bool DrmPipeline::tryApply(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction)
+{
+    if (gpu->atomicModeSetting()) {
+        return tryApplyAtomic(gpu, transaction);
+    } else {
+        return tryApplyLegacy(gpu, transaction);
+    }
+}
+
+static bool addConnectorProperty(drmModeAtomicReq *req, DrmConnector *connector, DrmConnector::PropertyIndex property, uint64_t value)
+{
+    return true;
+}
+
+static bool addCrtcProperty(drmModeAtomicReq *req, DrmCrtc *crtc, DrmCrtc::PropertyIndex property, uint64_t value)
+{
+    return true;
+}
+
+static bool addPlaneProperty(drmModeAtomicReq *req, DrmPlane *plane, DrmPlane::PropertyIndex property, uint64_t value)
+{
+    return true;
+}
+
+bool DrmPipeline::tryApplyAtomic(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction)
+{
+    DrmScopedPointer<drmModeAtomicReq> req(drmModeAtomicAlloc());
+    if (!req) {
+        qCDebug(KWIN_DRM) << "Failed to allocate drmModeAtomicReq:" << strerror(errno);
+        return false;
+    }
+
+    for (auto it = transaction.begin(); it != transaction.end(); ++it) {
+        DrmPipeline *pipeline = it.key();
+        DrmConnector *connector = pipeline->connector();
+        DrmCrtc *crtc = pipeline->crtc();
+        DrmPlane *primaryPlane = pipeline->primaryPlane();
+
+        DrmConnectorState connectorState = connector->state();
+        DrmCrtcState crtcState = crtc->state();
+        DrmPlaneState primaryPlaneState = primaryPlane->state();
+
+        // Apply connector state changes.
+        const DrmPipelineChangeSet &pipelineChangeSet = it.value();
+        if (pipelineChangeSet.connector) {
+            const DrmConnectorChangeSet &connectorChangeSet = *pipelineChangeSet.connector;
+            if (connectorChangeSet.mode) {
+                connectorState.mode = connectorChangeSet.mode;
+            }
+        }
+
+        // Apply crtc state changes.
+        if (pipelineChangeSet.crtc) {
+            const DrmCrtcChangeSet &crtcChangeSet = *pipelineChangeSet.crtc;
+            crtcState.active = crtcChangeSet.active;
+            if (crtcChangeSet.gammaRamp) {
+                crtcState.gammaRamp = *crtcChangeSet.gammaRamp;
+            }
+            if (crtcChangeSet.vrr) {
+                crtcState.vrr = *crtcChangeSet.vrr;
+            }
+        }
+
+        // Apply primary plane state changes.
+        if (pipelineChangeSet.primaryPlane) {
+            const DrmPlaneChangeSet &planeChangeSet = *pipelineChangeSet.primaryPlane;
+            primaryPlaneState.buffer = planeChangeSet.buffer;
+            primaryPlaneState.crtcRect = planeChangeSet.crtcRect;
+            primaryPlaneState.sourceRect = planeChangeSet.sourceRect;
+        }
+
+        // Add connector's properties to the atomic request.
+        bool ok = true;
+
+        if (crtcState.active) {
+            ok &= addConnectorProperty(req.data(), connector, DrmConnector::PropertyIndex::CrtcId, crtc->id());
+
+            // if (auto property = m_connector->getProp(DrmConnector::PropertyIndex::Overscan)) {
+            //     ok &= addProperty(req, m_connector, property);
+            // }
+
+            // if (auto property = m_connector->getProp(DrmConnector::PropertyIndex::Underscan)) {
+            //     ok &= addProperty(req, m_connector, property);
+
+            //     // If the underscan property is available, these two are guaranteed to exist.
+            //     ok &= addProperty(req, m_connector, m_connector->getProp(DrmConnector::PropertyIndex::Underscan_hborder));
+            //     ok &= addProperty(req, m_connector, m_connector->getProp(DrmConnector::PropertyIndex::Underscan_vborder));
+            // }
+
+            // if (auto property = m_connector->getProp(DrmConnector::PropertyIndex::Broadcast_RGB)) {
+            //     ok &= addProperty(req, m_connector, property);
+            // }
+
+            // Add crtc's properties to the atomic request.
+            ok &= addCrtcProperty(req.data(), crtc, DrmCrtc::PropertyIndex::ModeId, crtcState.mode->blobId());
+            ok &= addCrtcProperty(req.data(), crtc, DrmCrtc::PropertyIndex::Active, 1);
+
+            // if (auto property = m_crtc->getProp(DrmCrtc::PropertyIndex::VrrEnabled)) {
+            //     ok &= addProperty(req, m_crtc, property);
+            // }
+            // if (auto property = m_crtc->getProp(DrmCrtc::PropertyIndex::Gamma_LUT)) {
+            //     ok &= addProperty(req, m_crtc, property);
+            // }
+
+            // Add primary plane's properties to the atomic request.
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcId, crtc->id());
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::SrcX, primaryPlaneState.sourceRect.x() << 16);
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::SrcY, primaryPlaneState.sourceRect.y() << 16);
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::SrcW, primaryPlaneState.sourceRect.width() << 16);
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::SrcH, primaryPlaneState.sourceRect.height() << 16);
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcX, primaryPlaneState.crtcRect.x());
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcY, primaryPlaneState.crtcRect.y());
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcW, primaryPlaneState.crtcRect.width());
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcH, primaryPlaneState.crtcRect.height());
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::FbId, primaryPlaneState.buffer->bufferId());
+
+            // if (auto rotationProperty = m_primaryPlane->getProp(DrmPlane::PropertyIndex::Rotation)) {
+            //     ok &= addProperty(req, m_primaryPlane, rotationProperty);
+            // }
+
+        } else {
+            ok &= addConnectorProperty(req.data(), connector, DrmConnector::PropertyIndex::CrtcId, 0);
+            ok &= addCrtcProperty(req.data(), crtc, DrmCrtc::PropertyIndex::Active, 0);
+            ok &= addPlaneProperty(req.data(), primaryPlane, DrmPlane::PropertyIndex::CrtcId, 0);
+        }
+
+        if (!ok) {
+            qCWarning(KWIN_DRM) << "Wubba lubba dub dub";
+            return false;
+        }
+    }
+
+    // drmModeAtomicCommit()
+
+    for (auto it = transaction.begin(); it != transaction.end(); ++it) {
+        // TODO: Either commit or rollback the state.
+    }
+
+    return true;
+}
+
+bool DrmPipeline::tryApplyLegacy(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction)
+{
+    for (auto it = transaction.begin(); it != transaction.end(); ++it) {
+        DrmPipeline *pipeline = it.key();
+        DrmConnector *connector = pipeline->connector();
+        DrmCrtc *crtc = pipeline->crtc();
+
+        const DrmPipelineChangeSet &pipelineChangeSet = it.value();
+        if (pipelineChangeSet.connector) {
+            const DrmConnectorChangeSet &connectorChangeSet = *pipelineChangeSet.connector;
+
+            if (connectorChangeSet.mode) {
+                const DrmPlaneChangeSet &planeChangeSet = *pipelineChangeSet.primaryPlane;
+                uint32_t connectorId = connector->id();
+                if (drmModeSetCrtc(gpu->fd(),
+                                   crtc->id(),
+                                   planeChangeSet.buffer->bufferId(),
+                                   planeChangeSet.crtcRect.x(),
+                                   planeChangeSet.crtcRect.y(),
+                                   &connectorId, 1, connectorChangeSet.mode->nativeMode()) != 0) {
+                    return false;
+                }
+                // TODO: Set mode index
+            }
+        }
+
+        if (pipelineChangeSet.crtc) {
+            const DrmCrtcChangeSet &crtcChangeSet = *pipelineChangeSet.crtc;
+
+            // m_connector->getProp(DrmConnector::PropertyIndex::Dpms)->setPropertyLegacy(active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
+
+            if (crtcChangeSet.gammaRamp) {
+                const GammaRamp &gammaRamp = *crtcChangeSet.gammaRamp;
+                uint16_t *red = const_cast<uint16_t *>(gammaRamp.red());
+                uint16_t *green = const_cast<uint16_t *>(gammaRamp.green());
+                uint16_t *blue = const_cast<uint16_t *>(gammaRamp.blue());
+                if (drmModeCrtcSetGamma(gpu->fd(), crtc->id(), gammaRamp.size(), red, green, blue) != 0) {
+                    qCWarning(KWIN_DRM) << "Setting legacy drm gamma ramp failed:" << strerror(errno);
+                    return false;
+                }
+            }
+        }
+
+        if (pipelineChangeSet.primaryPlane) {
+            const DrmPlaneChangeSet &planeChangeSet = *pipelineChangeSet.primaryPlane;
+
+            if (drmModePageFlip(gpu->fd(),
+                                crtc->id(),
+                                planeChangeSet.buffer ? planeChangeSet.buffer->bufferId() : 0,
+                                DRM_MODE_PAGE_FLIP_EVENT,
+                                pipeline->output()) != 0) {
+                qCWarning(KWIN_DRM) << "Legacy page flip failed:" << strerror(errno);
+                return false;
+            }
+            crtc->setNext(planeChangeSet.buffer);
+        }
+
+        if (pipelineChangeSet.cursorPlane) {
+            const DrmPlaneChangeSet &planeChangeSet = *pipelineChangeSet.cursorPlane;
+
+            if (drmModeSetCursor2(gpu->fd(),
+                                  pipeline->crtc()->id(),
+                                  planeChangeSet.buffer ? planeChangeSet.buffer->bufferId() : 0,
+                                  planeChangeSet.sourceRect.width(),
+                                  planeChangeSet.sourceRect.height(),
+                                  0, 0) == -ENOTSUP) {
+                // for NVIDIA case that does not support drmModeSetCursor2
+                if (drmModeSetCursor(gpu->fd(),
+                                     pipeline->crtc()->id(),
+                                     planeChangeSet.buffer ? planeChangeSet.buffer->bufferId() : 0,
+                                     planeChangeSet.sourceRect.width(),
+                                     planeChangeSet.sourceRect.height()) != 0) {
+                    qCWarning(KWIN_DRM) << "Failed to set the legacy drm cursor:" << strerror(errno);
+                    return false;
+                }
+            } else {
+                return false;
+            }
+
+            if (drmModeMoveCursor(gpu->fd(),
+                                  pipeline->crtc()->id(),
+                                  planeChangeSet.crtcRect.x(),
+                                  planeChangeSet.crtcRect.y()) != 0) {
+                qCWarning(KWIN_DRM) << "Failed to move the legacy drm cursor:" << strerror(errno);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void DrmPipeline::setup()
 {
     if (m_gpu->atomicModeSetting()) {
         if (m_connector->getProp(DrmConnector::PropertyIndex::CrtcId)->current() == m_crtc->id()) {
             m_connector->findCurrentMode(m_crtc->queryCurrentMode());
         }
-        m_connector->setPending(DrmConnector::PropertyIndex::CrtcId, m_crtc->id());
-        m_crtc->setPending(DrmCrtc::PropertyIndex::Active, 1);
-        auto mode = m_connector->currentMode();
-        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
-        m_primaryPlane->setPending(DrmPlane::PropertyIndex::CrtcId, m_crtc->id());
-        m_primaryPlane->set(QPoint(0, 0), sourceSize(), QPoint(0, 0), mode->size());
-        m_primaryPlane->setTransformation(DrmPlane::Transformation::Rotate0);
         m_formats = m_primaryPlane->formats();
     } else {
         m_formats.insert(DRM_FORMAT_XRGB8888, {});
@@ -78,351 +303,102 @@ bool DrmPipeline::test()
 
 bool DrmPipeline::present(const QSharedPointer<DrmBuffer> &buffer)
 {
-    m_primaryBuffer = buffer;
-    if (m_gpu->useEglStreams() && m_gpu->eglBackend() != nullptr && m_gpu == m_gpu->platform()->primaryGpu()) {
-        // EglStreamBackend queues normal page flips through EGL,
-        // modesets etc are performed through DRM-KMS
-        bool needsCommit = std::any_of(m_allObjects.constBegin(), m_allObjects.constEnd(), [](auto obj){return obj->needsCommit();});
-        if (!needsCommit) {
-            return true;
-        }
-    }
-    if (m_gpu->atomicModeSetting()) {
-        if (!atomicCommit()) {
-            // update properties and try again
-            updateProperties();
-            if (!atomicCommit()) {
-                qCWarning(KWIN_DRM) << "Atomic present failed!" << strerror(errno);
-                printDebugInfo();
-                return false;
-            }
-        }
-    } else {
-        if (!presentLegacy()) {
-            qCWarning(KWIN_DRM) << "Present failed!" << strerror(errno);
-            return false;
-        }
-    }
     return true;
 }
 
 bool DrmPipeline::atomicCommit()
 {
-    return commitPipelines({this}, CommitMode::CommitWithPageflipEvent);
+    return false;
 }
 
 bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, CommitMode mode)
 {
-    Q_ASSERT(!pipelines.isEmpty());
-
-    if (pipelines[0]->m_gpu->atomicModeSetting()) {
-        drmModeAtomicReq *req = drmModeAtomicAlloc();
-        if (!req) {
-            qCDebug(KWIN_DRM) << "Failed to allocate drmModeAtomicReq!" << strerror(errno);
-            return false;
-        }
-        uint32_t flags = 0;
-        const auto &failed = [pipelines, req](){
-            drmModeAtomicFree(req);
-            for (const auto &pipeline : pipelines) {
-                pipeline->printDebugInfo();
-                if (pipeline->m_oldTestBuffer) {
-                    pipeline->m_primaryBuffer = pipeline->m_oldTestBuffer;
-                    pipeline->m_oldTestBuffer = nullptr;
-                }
-                for (const auto &obj : qAsConst(pipeline->m_allObjects)) {
-                    obj->rollbackPending();
-                }
-            }
-            return false;
-        };
-        for (const auto &pipeline : pipelines) {
-            if (!pipeline->checkTestBuffer()) {
-                qCWarning(KWIN_DRM) << "Checking test buffer failed for" << mode;
-                return failed();
-            }
-            if (!pipeline->populateAtomicValues(req, flags)) {
-                qCWarning(KWIN_DRM) << "Populating atomic values failed for" << mode;
-                return failed();
-            }
-        }
-        if (mode != CommitMode::CommitWithPageflipEvent) {
-            flags &= ~DRM_MODE_PAGE_FLIP_EVENT;
-        }
-        if (drmModeAtomicCommit(pipelines[0]->m_gpu->fd(), req, (flags & (~DRM_MODE_PAGE_FLIP_EVENT)) | DRM_MODE_ATOMIC_TEST_ONLY, pipelines[0]->m_output) != 0) {
-            qCWarning(KWIN_DRM) << "Atomic test for" << mode << "failed!" << strerror(errno);
-            return failed();
-        }
-        if (mode != CommitMode::Test && drmModeAtomicCommit(pipelines[0]->m_gpu->fd(), req, flags, pipelines[0]->m_output) != 0) {
-            qCWarning(KWIN_DRM) << "Atomic commit failed! This should never happen!" << strerror(errno);
-            return failed();
-        }
-        for (const auto &pipeline : pipelines) {
-            pipeline->m_oldTestBuffer = nullptr;
-            for (const auto &obj : qAsConst(pipeline->m_allObjects)) {
-                obj->commitPending();
-            }
-            if (mode != CommitMode::Test) {
-                pipeline->m_primaryPlane->setNext(pipeline->m_primaryBuffer);
-                for (const auto &obj : qAsConst(pipeline->m_allObjects)) {
-                    obj->commit();
-                }
-            }
-        }
-        drmModeAtomicFree(req);
-        return true;
-    } else {
-        for (const auto &pipeline : pipelines) {
-            if (pipeline->m_legacyNeedsModeset && !pipeline->modeset(0)) {
-                return false;
-            }
-        }
-        return true;
-    }
+    return false;
 }
 
 bool DrmPipeline::populateAtomicValues(drmModeAtomicReq *req, uint32_t &flags)
 {
-    bool usesEglStreams = m_gpu->useEglStreams() && m_gpu->eglBackend() != nullptr && m_gpu == m_gpu->platform()->primaryGpu();
-    if (!usesEglStreams && isActive()) {
-        flags |= DRM_MODE_PAGE_FLIP_EVENT;
-    }
-    bool needsModeset = std::any_of(m_allObjects.constBegin(), m_allObjects.constEnd(), [](auto obj){return obj->needsModeset();});
-    if (needsModeset) {
-        flags |= DRM_MODE_ATOMIC_ALLOW_MODESET;
-    } else {
-        flags |= DRM_MODE_ATOMIC_NONBLOCK;
-    }
-    m_lastFlags = flags;
-
-    auto modeSize = m_connector->currentMode()->size();
-    m_primaryPlane->set(QPoint(0, 0), m_primaryBuffer ? m_primaryBuffer->size() : modeSize, QPoint(0, 0), modeSize);
-    m_primaryPlane->setBuffer(isActive() ? m_primaryBuffer.get() : nullptr);
-    for (const auto &obj : qAsConst(m_allObjects)) {
-        if (!obj->atomicPopulate(req)) {
-            return false;
-        }
-    }
     return true;
 }
 
 bool DrmPipeline::presentLegacy()
 {
-    if ((!m_crtc->current() || m_crtc->current()->needsModeChange(m_primaryBuffer.get())) && !modeset(m_connector->currentModeIndex())) {
-        return false;
-    }
-    m_lastFlags = DRM_MODE_PAGE_FLIP_EVENT;
-    m_crtc->setNext(m_primaryBuffer);
-    if (drmModePageFlip(m_gpu->fd(), m_crtc->id(), m_primaryBuffer ? m_primaryBuffer->bufferId() : 0, DRM_MODE_PAGE_FLIP_EVENT, m_output) != 0) {
-        qCWarning(KWIN_DRM) << "Page flip failed:" << strerror(errno) << m_primaryBuffer;
-        return false;
-    }
     return true;
 }
 
 bool DrmPipeline::modeset(int modeIndex)
 {
-    int oldModeIndex = m_connector->currentModeIndex();
-    m_connector->setModeIndex(modeIndex);
-    DrmConnectorMode *mode = m_connector->currentMode();
-    if (m_gpu->atomicModeSetting()) {
-        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
-        if (m_connector->hasOverscan()) {
-            m_connector->setOverscan(m_connector->overscan(), mode->size());
-        }
-        bool works = test();
-        // hardware rotation could fail in some modes, try again with soft rotation if possible
-        if (!works
-            && transformation() != DrmPlane::Transformations(DrmPlane::Transformation::Rotate0)
-            && setPendingTransformation(DrmPlane::Transformation::Rotate0)) {
-            // values are reset on the failing test, set them again
-            m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, mode->blobId());
-            if (m_connector->hasOverscan()) {
-                m_connector->setOverscan(m_connector->overscan(), mode->size());
-            }
-            works = test();
-        }
-        if (!works) {
-            qCWarning(KWIN_DRM) << "Modeset failed!" << strerror(errno);
-            m_connector->setModeIndex(oldModeIndex);
-            return false;
-        }
-    } else {
-        uint32_t connId = m_connector->id();
-        if (!checkTestBuffer() || drmModeSetCrtc(m_gpu->fd(), m_crtc->id(), m_primaryBuffer->bufferId(), 0, 0, &connId, 1, mode->nativeMode()) != 0) {
-            qCWarning(KWIN_DRM) << "Modeset failed!" << strerror(errno);
-            m_connector->setModeIndex(oldModeIndex);
-            m_primaryBuffer = m_oldTestBuffer;
-            return false;
-        }
-        m_oldTestBuffer = nullptr;
-        m_legacyNeedsModeset = false;
-        // make sure the buffer gets kept alive, or the modeset gets reverted by the kernel
-        if (m_crtc->current()) {
-            m_crtc->setNext(m_primaryBuffer);
-        } else {
-            m_crtc->setCurrent(m_primaryBuffer);
-        }
-    }
     return true;
 }
 
 bool DrmPipeline::checkTestBuffer()
 {
-    if (m_primaryBuffer && m_primaryBuffer->size() == sourceSize()) {
-        return true;
-    }
-    if (!isActive()) {
-        return true;
-    }
-    auto backend = m_gpu->eglBackend();
-    QSharedPointer<DrmBuffer> buffer;
-    // try to re-use buffers if possible.
-    const auto &checkBuffer = [this, backend, &buffer](const QSharedPointer<DrmBuffer> &buf){
-        const auto &mods = supportedModifiers(buf->format());
-        if (buf->format() == backend->drmFormat()
-            && (mods.isEmpty() || mods.contains(buf->modifier()))
-            && buf->size() == sourceSize()) {
-            buffer = buf;
-        }
-    };
-    if (m_primaryPlane && m_primaryPlane->next()) {
-        checkBuffer(m_primaryPlane->next());
-    } else if (m_primaryPlane && m_primaryPlane->current()) {
-        checkBuffer(m_primaryPlane->current());
-    } else if (m_crtc->next()) {
-        checkBuffer(m_crtc->next());
-    } else if (m_crtc->current()) {
-        checkBuffer(m_crtc->current());
-    }
-    // if we don't have a fitting buffer already, get or create one
-    if (buffer) {
-#if HAVE_GBM
-    } else if (backend && m_output) {
-        buffer = backend->renderTestFrame(m_output);
-    } else if (backend && m_gpu->gbmDevice()) {
-        gbm_bo *bo = gbm_bo_create(m_gpu->gbmDevice(), sourceSize().width(), sourceSize().height(), GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-        if (!bo) {
-            return false;
-        }
-        buffer = QSharedPointer<DrmGbmBuffer>::create(m_gpu, bo, nullptr);
-#endif
-    } else {
-        buffer = QSharedPointer<DrmDumbBuffer>::create(m_gpu, sourceSize());
-    }
-    if (buffer && buffer->bufferId()) {
-        m_oldTestBuffer = m_primaryBuffer;
-        m_primaryBuffer = buffer;
-        return true;
-    }
+//     if (m_primaryBuffer && m_primaryBuffer->size() == sourceSize()) {
+//         return true;
+//     }
+//     if (!isActive()) {
+//         return true;
+//     }
+//     auto backend = m_gpu->eglBackend();
+//     QSharedPointer<DrmBuffer> buffer;
+//     // try to re-use buffers if possible.
+//     const auto &checkBuffer = [this, backend, &buffer](const QSharedPointer<DrmBuffer> &buf){
+//         const auto &mods = supportedModifiers(buf->format());
+//         if (buf->format() == backend->drmFormat()
+//             && (mods.isEmpty() || mods.contains(buf->modifier()))
+//             && buf->size() == sourceSize()) {
+//             buffer = buf;
+//         }
+//     };
+//     if (m_primaryPlane && m_primaryPlane->next()) {
+//         checkBuffer(m_primaryPlane->next());
+//     } else if (m_primaryPlane && m_primaryPlane->current()) {
+//         checkBuffer(m_primaryPlane->current());
+//     } else if (m_crtc->next()) {
+//         checkBuffer(m_crtc->next());
+//     } else if (m_crtc->current()) {
+//         checkBuffer(m_crtc->current());
+//     }
+//     // if we don't have a fitting buffer already, get or create one
+//     if (buffer) {
+// #if HAVE_GBM
+//     } else if (backend && m_output) {
+//         buffer = backend->renderTestFrame(m_output);
+//     } else if (backend && m_gpu->gbmDevice()) {
+//         gbm_bo *bo = gbm_bo_create(m_gpu->gbmDevice(), sourceSize().width(), sourceSize().height(), GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+//         if (!bo) {
+//             return false;
+//         }
+//         buffer = QSharedPointer<DrmGbmBuffer>::create(m_gpu, bo, nullptr);
+// #endif
+//     } else {
+//         buffer = QSharedPointer<DrmDumbBuffer>::create(m_gpu, sourceSize());
+//     }
+//     if (buffer && buffer->bufferId()) {
+//         m_oldTestBuffer = m_primaryBuffer;
+//         m_primaryBuffer = buffer;
+//         return true;
+//     }
     return false;
 }
 
 bool DrmPipeline::setCursor(const QSharedPointer<DrmDumbBuffer> &buffer, const QPoint &hotspot)
 {
-    if (!m_cursor.dirtyBo && m_cursor.buffer == buffer && m_cursor.hotspot == hotspot) {
-        return true;
-    }
-    const QSize &s = buffer ? buffer->size() : QSize(64, 64);
-    int ret = drmModeSetCursor2(m_gpu->fd(), m_crtc->id(), buffer ? buffer->handle() : 0, s.width(), s.height(), hotspot.x(), hotspot.y());
-    if (ret == -ENOTSUP) {
-        // for NVIDIA case that does not support drmModeSetCursor2
-        ret = drmModeSetCursor(m_gpu->fd(), m_crtc->id(), buffer ? buffer->handle() : 0, s.width(), s.height());
-    }
-    if (ret != 0) {
-        qCWarning(KWIN_DRM) << "Could not set cursor:" << strerror(errno);
-        return false;
-    }
-    m_cursor.buffer = buffer;
-    m_cursor.dirtyBo = false;
-    m_cursor.hotspot = hotspot;
     return true;
 }
 
 bool DrmPipeline::moveCursor(QPoint pos)
 {
-    if (!m_cursor.dirtyPos && m_cursor.pos == pos) {
-        return true;
-    }
-    if (drmModeMoveCursor(m_gpu->fd(), m_crtc->id(), pos.x(), pos.y()) != 0) {
-        return false;
-    }
-    m_cursor.pos = pos;
-    m_cursor.dirtyPos = false;
     return true;
 }
 
 bool DrmPipeline::setActive(bool active)
 {
-    // disable the cursor before the primary plane to circumvent a crash in amdgpu
-    if (isActive() && !active) {
-        if (drmModeSetCursor(m_gpu->fd(), m_crtc->id(), 0, 0, 0) != 0) {
-            qCWarning(KWIN_DRM) << "Could not set cursor:" << strerror(errno);
-        }
-        m_cursor.dirtyBo = true;
-        m_cursor.dirtyPos = true;
-    }
-    bool success = false;
-    if (m_gpu->atomicModeSetting()) {
-        DrmConnectorMode *mode = m_connector->currentMode();
-        m_connector->setPending(DrmConnector::PropertyIndex::CrtcId, active ? m_crtc->id() : 0);
-        m_crtc->setPending(DrmCrtc::PropertyIndex::Active, active);
-        m_crtc->setPending(DrmCrtc::PropertyIndex::ModeId, active ? mode->blobId() : 0);
-        m_primaryPlane->setPending(DrmPlane::PropertyIndex::CrtcId, active ? m_crtc->id() : 0);
-        if (active) {
-            success = test();
-            if (!success) {
-                updateProperties();
-                success = test();
-            }
-        } else {
-            // immediately commit if disabling as there will be no present
-            success = atomicCommit();
-        }
-    } else {
-        success = m_connector->getProp(DrmConnector::PropertyIndex::Dpms)->setPropertyLegacy(active ? DRM_MODE_DPMS_ON : DRM_MODE_DPMS_OFF);
-    }
-    if (!success) {
-        qCWarning(KWIN_DRM) << "Setting active to" << active << "failed" << strerror(errno);
-    }
-    if (isActive()) {
-        // enable cursor (again)
-        setCursor(m_cursor.buffer, m_cursor.hotspot);
-        moveCursor(m_cursor.pos);
-    }
-    return success;
+    return false;
 }
 
 bool DrmPipeline::setGammaRamp(const GammaRamp &ramp)
 {
-    // There are old Intel iGPUs that don't have full support for setting
-    // the gamma ramp with AMS -> fall back to legacy without the property
-    if (m_gpu->atomicModeSetting() && m_crtc->getProp(DrmCrtc::PropertyIndex::Gamma_LUT)) {
-        struct drm_color_lut *gamma = new drm_color_lut[ramp.size()];
-        for (uint32_t i = 0; i < ramp.size(); i++) {
-            gamma[i].red = ramp.red()[i];
-            gamma[i].green = ramp.green()[i];
-            gamma[i].blue = ramp.blue()[i];
-        }
-        bool result = m_crtc->setPendingBlob(DrmCrtc::PropertyIndex::Gamma_LUT, gamma, ramp.size() * sizeof(drm_color_lut));
-        delete[] gamma;
-        if (!result) {
-            qCWarning(KWIN_DRM) << "Could not create gamma LUT property blob" << strerror(errno);
-            return false;
-        }
-        if (!test()) {
-            qCWarning(KWIN_DRM) << "Setting gamma failed!" << strerror(errno);
-            return false;
-        }
-    } else {
-        uint16_t *red = const_cast<uint16_t*>(ramp.red());
-        uint16_t *green = const_cast<uint16_t*>(ramp.green());
-        uint16_t *blue = const_cast<uint16_t*>(ramp.blue());
-        if (drmModeCrtcSetGamma(m_gpu->fd(), m_crtc->id(), ramp.size(), red, green, blue) != 0) {
-            qCWarning(KWIN_DRM) << "setting gamma failed!" << strerror(errno);
-            return false;
-        }
-    }
     return true;
 }
 
@@ -458,9 +434,8 @@ bool DrmPipeline::setSyncMode(RenderLoopPrivate::SyncMode syncMode)
     if (m_gpu->atomicModeSetting()) {
         vrrProp->setPending(vrr);
         return test();
-    } else {
-        return vrrProp->setPropertyLegacy(vrr);
     }
+    return false;
 }
 
 bool DrmPipeline::setOverscan(uint32_t overscan)
@@ -546,17 +521,6 @@ void DrmPipeline::setOutput(DrmOutput *output)
 DrmOutput *DrmPipeline::output() const
 {
     return m_output;
-}
-
-void DrmPipeline::updateProperties()
-{
-    for (const auto &obj : qAsConst(m_allObjects)) {
-        obj->updateProperties();
-    }
-    // with legacy we don't know what happened to the cursor after VT switch
-    // so make sure it gets set again
-    m_cursor.dirtyBo = true;
-    m_cursor.dirtyPos = true;
 }
 
 bool DrmPipeline::isFormatSupported(uint32_t drmFormat) const

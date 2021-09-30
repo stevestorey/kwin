@@ -43,28 +43,12 @@ public:
         return m_gpu;
     }
 
-    /**
-     * Populate an atomic request with data of this object.
-     * @param req the atomic request
-     * @return true when the request was successfully populated
-     */
-    bool atomicPopulate(drmModeAtomicReq *req) const;
-
     template <typename T>
     bool setPending(T prop, uint64_t new_value)
     {
         if (auto &property = m_props.at(static_cast<uint32_t>(prop))) {
             property->setPending(new_value);
             return true;
-        }
-        return false;
-    }
-
-    template <typename T>
-    bool setPendingBlob(T prop, void *data, size_t length)
-    {
-        if (auto &property = m_props.at(static_cast<uint32_t>(prop))) {
-            return property->setPendingBlob(data, length);
         }
         return false;
     }
@@ -127,15 +111,10 @@ public:
 
         void setPending(uint64_t value);
         uint64_t pending() const;
-        bool setPendingBlob(void *blob, size_t length);
 
         void setCurrent(uint64_t value);
         uint64_t current() const;
-        void setCurrentBlob(drmModePropertyBlobRes *blob);
 
-        void commit();
-        void commitPending();
-        void rollbackPending();
         bool needsCommit() const;
 
         bool setPropertyLegacy(uint64_t value);
@@ -147,14 +126,11 @@ public:
         // the value that will be m_next after the property has been committed
         // has not necessarily been tested to work
         uint64_t m_pending = 0;
-        drmModePropertyBlobRes *m_pendingBlob = nullptr;
         // the value that will be m_current after the next atomic commit
         // and has been tested to work
         uint64_t m_next = 0;
-        drmModePropertyBlobRes *m_nextBlob = nullptr;
         // the value currently set for or by the kernel
         uint64_t m_current = 0;
-        drmModePropertyBlobRes *m_currentBlob = nullptr;
 
         QMap<uint32_t, uint64_t> m_enumMap;
         QVector<QByteArray> m_enumNames;
@@ -169,11 +145,7 @@ public:
     }
 
     QVector<Property*> properties();
-    void commit();
-    void commitPending();
-    void rollbackPending();
 
-    bool needsCommit() const;
     virtual bool needsModeset() const = 0;
 
     virtual bool updateProperties();

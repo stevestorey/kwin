@@ -14,6 +14,7 @@
 #include <QVector>
 #include <QSharedPointer>
 
+#include <optional>
 #include <xf86drmMode.h>
 
 #include "drm_object_plane.h"
@@ -25,10 +26,78 @@ namespace KWin
 
 class DrmGpu;
 class DrmConnector;
+class DrmConnectorMode;
 class DrmCrtc;
 class DrmBuffer;
 class DrmDumbBuffer;
 class GammaRamp;
+
+/**
+ * The DrmConnectorState type represents double-buffered state of a drm connector. TODO(vlad): move to DrmConnector
+ */
+struct DrmConnectorState
+{
+    DrmConnectorMode *mode = nullptr;
+};
+
+/**
+ * The DrmCrtcState type represents double-buffered state of a drm crtc. TODO(vlad): move to DrmCrtc
+ */
+struct DrmCrtcState
+{
+    bool active = true;
+    GammaRamp gammaRamp;
+    bool vrr = false;
+};
+
+/**
+ * The DrmPlaneState type represents double-buffered state of a drm plane. TODO(vlad): move to DrmPlane.
+ */
+struct DrmPlaneState
+{
+    QSharedPointer<DrmBuffer> buffer;
+    QRect crtcRect;
+    QRect sourceRect;
+};
+
+/**
+ * The DrmConnectorChangeSet type is used to describe changes applied to the connector.
+ */
+struct DrmConnectorChangeSet
+{
+    DrmConnectorMode *mode = nullptr;
+};
+
+/**
+ * The DrmCrtcChangeSet type is used to describe changes applied to the crtc.
+ */
+struct DrmCrtcChangeSet
+{
+    bool active = true;
+    std::optional<GammaRamp> gammaRamp;
+    std::optional<bool> vrr;
+};
+
+/**
+ * The DrmPlaneChangeSet type is used to describe changes applied to a plane, e.g. cursor.
+ */
+struct DrmPlaneChangeSet
+{
+    QSharedPointer<DrmBuffer> buffer;
+    QRect crtcRect;
+    QRect sourceRect;
+};
+
+/**
+ * The DrmPipelineChangeSet type is used to describe changes applied to a pipeline.
+ */
+struct DrmPipelineChangeSet
+{
+    std::optional<DrmConnectorChangeSet> connector;
+    std::optional<DrmCrtcChangeSet> crtc;
+    std::optional<DrmPlaneChangeSet> primaryPlane;
+    std::optional<DrmPlaneChangeSet> cursorPlane;
+};
 
 class DrmPipeline
 {
@@ -36,6 +105,7 @@ public:
     DrmPipeline(DrmGpu *gpu, DrmConnector *conn, DrmCrtc *crtc, DrmPlane *primaryPlane);
     ~DrmPipeline();
 
+// TODO(vlad): Start
     /**
      * Sets the necessary initial drm properties for the pipeline to work
      */
@@ -56,6 +126,7 @@ public:
     bool setSyncMode(RenderLoopPrivate::SyncMode syncMode);
     bool setOverscan(uint32_t overscan);
     bool setRgbRange(AbstractWaylandOutput::RgbRange rgbRange);
+// TODO(vlad): End. Remove in the middle.
 
     DrmPlane::Transformations transformation() const;
     bool isCursorVisible() const;
@@ -68,7 +139,6 @@ public:
     void pageFlipped();
     void printDebugInfo() const;
     QSize sourceSize() const;
-    void updateProperties();
 
     bool isFormatSupported(uint32_t drmFormat) const;
     QVector<uint64_t> supportedModifiers(uint32_t drmFormat) const;
@@ -83,6 +153,11 @@ public:
     };
     Q_ENUM(CommitMode);
     static bool commitPipelines(const QVector<DrmPipeline*> &pipelines, CommitMode mode);
+
+    static bool tryApply(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction); // TODO: flags
+
+    static bool tryApplyAtomic(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction);
+    static bool tryApplyLegacy(DrmGpu *gpu, const QMap<DrmPipeline *, DrmPipelineChangeSet> &transaction);
 
 private:
     bool populateAtomicValues(drmModeAtomicReq *req, uint32_t &flags);
