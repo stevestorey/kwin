@@ -53,6 +53,7 @@ set(kwin_SRCS
     globalshortcuts.cpp
     group.cpp
     idle_inhibition.cpp
+    idledetector.cpp
     input.cpp
     input_event.cpp
     input_event_spy.cpp

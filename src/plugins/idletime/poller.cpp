@@ -7,13 +7,8 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "poller.h"
-
-#include <KIdleTime>
-
+#include "idledetector.h"
 #include "wayland_server.h"
-#include <KWaylandServer/seat_interface.h>
-#include <KWaylandServer/idle_interface.h>
-
 
 namespace KWin
 {
@@ -23,8 +18,6 @@ KWinIdleTimePoller::KWinIdleTimePoller(QObject *parent)
 {
 }
 
-KWinIdleTimePoller::~KWinIdleTimePoller() = default;
-
 bool KWinIdleTimePoller::isAvailable()
 {
     return true;
@@ -32,100 +25,25 @@ bool KWinIdleTimePoller::isAvailable()
 
 bool KWinIdleTimePoller::setUpPoller()
 {
-    connect(waylandServer()->idle(), &KWaylandServer::IdleInterface::inhibitedChanged, this, &KWinIdleTimePoller::onInhibitedChanged);
-    connect(waylandServer()->seat(), &KWaylandServer::SeatInterface::timestampChanged, this, &KWinIdleTimePoller::onTimestampChanged);
-
     return true;
 }
 
 void KWinIdleTimePoller::unloadPoller()
 {
-    if (waylandServer() && waylandServer()->idle()) {
-        disconnect(waylandServer()->idle(), &KWaylandServer::IdleInterface::inhibitedChanged, this, &KWinIdleTimePoller::onInhibitedChanged);
-        disconnect(waylandServer()->seat(), &KWaylandServer::SeatInterface::timestampChanged, this, &KWinIdleTimePoller::onTimestampChanged);
-    }
-
-    qDeleteAll(m_timeouts);
-    m_timeouts.clear();
-
-    m_idling = false;
 }
 
-void KWinIdleTimePoller::addTimeout(int newTimeout)
+void KWinIdleTimePoller::addTimeout(int nextTimeout)
 {
-    if (m_timeouts.contains(newTimeout)) {
+    if (m_timeouts.contains(nextTimeout)) {
         return;
     }
 
-    auto timer = new QTimer();
-    timer->setInterval(newTimeout);
-    timer->setSingleShot(true);
-    timer->callOnTimeout(this, [newTimeout, this](){
-        m_idling = true;
-        Q_EMIT timeoutReached(newTimeout);
+    auto detector = new IdleDetector(std::chrono::milliseconds(nextTimeout), this);
+    m_timeouts.insert(nextTimeout, detector);
+    connect(detector, &IdleDetector::idle, this, [this, nextTimeout] {
+        Q_EMIT timeoutReached(nextTimeout);
     });
-
-    m_timeouts.insert(newTimeout, timer);
-
-    if (!waylandServer()->idle()->isInhibited()) {
-        timer->start();
-    }
-}
-
-void KWinIdleTimePoller::processActivity()
-{
-    if (m_idling) {
-        Q_EMIT resumingFromIdle();
-        m_idling = false;
-    }
-
-    for (QTimer *timer : qAsConst(m_timeouts)) {
-        timer->start();
-    }
-}
-
-void KWinIdleTimePoller::onInhibitedChanged()
-{
-    if (waylandServer()->idle()->isInhibited()) {
-        // must stop the timers
-        stopCatchingIdleEvents();
-    } else {
-        // resume the timers
-        catchIdleEvent();
-
-        // register some activity
-        Q_EMIT resumingFromIdle();
-    }
-}
-
-void KWinIdleTimePoller::onTimestampChanged()
-{
-    if (!waylandServer()->idle()->isInhibited()) {
-        processActivity();
-    }
-}
-
-void KWinIdleTimePoller::catchIdleEvent()
-{
-    for (QTimer *timer : qAsConst(m_timeouts)) {
-        timer->start();
-    }
-}
-
-void KWinIdleTimePoller::stopCatchingIdleEvents()
-{
-    for (QTimer *timer : qAsConst(m_timeouts)) {
-        timer->stop();
-    }
-}
-
-void KWinIdleTimePoller::simulateUserActivity()
-{
-    if (waylandServer()->idle()->isInhibited()) {
-        return ;
-    }
-    processActivity();
-    waylandServer()->simulateUserActivity();
+    connect(detector, &IdleDetector::resumed, this, &KWinIdleTimePoller::resumingFromIdle);
 }
 
 void KWinIdleTimePoller::removeTimeout(int nextTimeout)
@@ -138,11 +56,33 @@ QList< int > KWinIdleTimePoller::timeouts() const
     return m_timeouts.keys();
 }
 
+void KWinIdleTimePoller::catchIdleEvent()
+{
+    if (m_catchResumeTimeout) {
+        // already setup
+        return;
+    }
+    m_catchResumeTimeout = new IdleDetector(std::chrono::milliseconds::zero(), this);
+    connect(m_catchResumeTimeout, &IdleDetector::resumed, this, [this] {
+        stopCatchingIdleEvents();
+        Q_EMIT resumingFromIdle();
+    });
+}
+
+void KWinIdleTimePoller::stopCatchingIdleEvents()
+{
+    delete m_catchResumeTimeout;
+    m_catchResumeTimeout = nullptr;
+}
+
 int KWinIdleTimePoller::forcePollRequest()
 {
     return 0;
 }
 
+void KWinIdleTimePoller::simulateUserActivity()
+{
+    waylandServer()->simulateUserActivity();
 }
 
-#include "poller.moc"
+} // namespace KWin

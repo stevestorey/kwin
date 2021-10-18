@@ -33,13 +33,6 @@ public:
 
     void registerClient(AbstractClient *client);
 
-    bool isInhibited() const {
-        return !m_idleInhibitors.isEmpty();
-    }
-    bool isInhibited(AbstractClient *client) const {
-        return m_idleInhibitors.contains(client);
-    }
-
 private Q_SLOTS:
     void slotWorkspaceCreated();
     void slotDesktopChanged();
@@ -50,7 +43,6 @@ private:
     void update(AbstractClient *client);
 
     IdleInterface *m_idle;
-    QVector<AbstractClient *> m_idleInhibitors;
     QMap<AbstractClient *, QMetaObject::Connection> m_connections;
 };
 }

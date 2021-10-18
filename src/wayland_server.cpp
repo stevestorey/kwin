@@ -12,6 +12,7 @@
 #include "platform.h"
 #include "composite.h"
 #include "idle_inhibition.h"
+#include "idledetector.h"
 #include "inputpanelv1integration.h"
 #include "screens.h"
 #include "layershellv1integration.h"
@@ -751,6 +752,49 @@ void WaylandServer::simulateUserActivity()
 {
     if (m_idle) {
         m_idle->simulateUserActivity();
+    }
+    for (IdleDetector *idleDetector : m_idleDetectors) {
+        idleDetector->activity();
+    }
+}
+
+void WaylandServer::addIdleDetector(IdleDetector *detector)
+{
+    Q_ASSERT(!m_idleDetectors.contains(detector));
+    m_idleDetectors.append(detector);
+
+    for (AbstractClient *inhibitor : qAsConst(m_idleInhibitors)) {
+        detector->inhibit(inhibitor);
+    }
+}
+
+void WaylandServer::removeIdleDetector(IdleDetector *detector)
+{
+    m_idleDetectors.removeOne(detector);
+}
+
+void WaylandServer::addIdleInhibitor(AbstractClient *inhibitor)
+{
+    if (!m_idleInhibitors.contains(inhibitor)) {
+        if (m_idle) {
+            m_idle->inhibit();
+        }
+        m_idleInhibitors.append(inhibitor);
+        for (IdleDetector *idleDetector : m_idleDetectors) {
+            idleDetector->inhibit(inhibitor);
+        }
+    }
+}
+
+void WaylandServer::removeIdleInhibitor(AbstractClient *inhibitor)
+{
+    if (m_idleInhibitors.removeOne(inhibitor)) {
+        if (m_idle) {
+            m_idle->uninhibit();
+        }
+        for (IdleDetector *idleDetector : m_idleDetectors) {
+            idleDetector->uninhibit(inhibitor);
+        }
     }
 }
 

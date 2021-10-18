@@ -10,6 +10,7 @@
 #include "idle_inhibition.h"
 #include "abstract_client.h"
 #include "deleted.h"
+#include "wayland_server.h"
 #include "workspace.h"
 
 #include <KWaylandServer/idle_interface.h>
@@ -61,24 +62,13 @@ void IdleInhibition::registerClient(AbstractClient *client)
 
 void IdleInhibition::inhibit(AbstractClient *client)
 {
-    if (isInhibited(client)) {
-        // already inhibited
-        return;
-    }
-    m_idleInhibitors << client;
-    m_idle->inhibit();
+    waylandServer()->addIdleInhibitor(client);
     // TODO: notify powerdevil?
 }
 
 void IdleInhibition::uninhibit(AbstractClient *client)
 {
-    auto it = std::find(m_idleInhibitors.begin(), m_idleInhibitors.end(), client);
-    if (it == m_idleInhibitors.end()) {
-        // not inhibited
-        return;
-    }
-    m_idleInhibitors.erase(it);
-    m_idle->uninhibit();
+    waylandServer()->removeIdleInhibitor(client);
 }
 
 void IdleInhibition::update(AbstractClient *client)

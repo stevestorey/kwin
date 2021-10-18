@@ -55,6 +55,7 @@ namespace KWin
 
 class AbstractClient;
 class AbstractOutput;
+class IdleDetector;
 class Toplevel;
 class XdgPopupClient;
 class XdgSurfaceClient;
@@ -226,6 +227,12 @@ public:
      */
     QString socketName() const;
 
+    void addIdleDetector(IdleDetector *detector);
+    void removeIdleDetector(IdleDetector *detector);
+
+    void addIdleInhibitor(AbstractClient *inhibitor);
+    void removeIdleInhibitor(AbstractClient *inhibitor);
+
 Q_SIGNALS:
     void shellClientAdded(KWin::AbstractClient *);
     void shellClientRemoved(KWin::AbstractClient *);
@@ -273,6 +280,8 @@ private:
     InitializationFlags m_initFlags;
     QHash<AbstractWaylandOutput *, WaylandOutput *> m_waylandOutputs;
     QHash<AbstractWaylandOutput *, WaylandOutputDevice *> m_waylandOutputDevices;
+    QList<IdleDetector *> m_idleDetectors;
+    QList<AbstractClient *> m_idleInhibitors;
     KWIN_SINGLETON(WaylandServer)
 };
 
