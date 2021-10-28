@@ -32,6 +32,18 @@
 namespace KWin
 {
 
+Q_GLOBAL_STATIC(QVector<QStaticPlugin>, builtInEffectList)
+
+QVector<QStaticPlugin> registeredBuiltInEffects()
+{
+    return *builtInEffectList();
+}
+
+void registerBuiltInEffect(QStaticPlugin staticPlugin)
+{
+    builtInEffectList()->append(staticPlugin);
+}
+
 void WindowPrePaintData::setTranslucent()
 {
     mask |= Effect::PAINT_WINDOW_TRANSLUCENT;

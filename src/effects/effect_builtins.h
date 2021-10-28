@@ -9,41 +9,43 @@
 #ifndef KWIN_EFFECT_BUILTINS_H
 #define KWIN_EFFECT_BUILTINS_H
 
+#include <kwineffects.h>
+
 #define KWIN_IMPORT_BUILTIN_EFFECTS                                                       \
-    Q_IMPORT_PLUGIN(BlurEffectFactory)                                                    \
-    Q_IMPORT_PLUGIN(ColorPickerEffectFactory)                                             \
-    Q_IMPORT_PLUGIN(ContrastEffectFactory)                                                \
-    Q_IMPORT_PLUGIN(DesktopGridEffectFactory)                                             \
-    Q_IMPORT_PLUGIN(DimInactiveEffectFactory)                                             \
-    Q_IMPORT_PLUGIN(FallApartEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(GlideEffectFactory)                                                   \
-    Q_IMPORT_PLUGIN(HighlightWindowEffectFactory)                                         \
-    Q_IMPORT_PLUGIN(InvertEffectFactory)                                                  \
-    Q_IMPORT_PLUGIN(KscreenEffectFactory)                                                 \
-    Q_IMPORT_PLUGIN(LookingGlassEffectFactory)                                            \
-    Q_IMPORT_PLUGIN(MagicLampEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(MagnifierEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(MouseClickEffectFactory)                                              \
-    Q_IMPORT_PLUGIN(MouseMarkEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(OverviewEffectFactory)                                                \
-    Q_IMPORT_PLUGIN(PresentWindowsEffectFactory)                                          \
-    Q_IMPORT_PLUGIN(ResizeEffectFactory)                                                  \
-    Q_IMPORT_PLUGIN(ScreenEdgeEffectFactory)                                              \
-    Q_IMPORT_PLUGIN(ScreenShotEffectFactory)                                              \
-    Q_IMPORT_PLUGIN(ScreenTransformEffectFactory)                                         \
-    Q_IMPORT_PLUGIN(SheetEffectFactory)                                                   \
-    Q_IMPORT_PLUGIN(ShowFpsEffectFactory)                                                 \
-    Q_IMPORT_PLUGIN(ShowPaintEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(SlideEffectFactory)                                                   \
-    Q_IMPORT_PLUGIN(SlideBackEffectFactory)                                               \
-    Q_IMPORT_PLUGIN(SlidingPopupsEffectFactory)                                           \
-    Q_IMPORT_PLUGIN(SnapHelperEffectFactory)                                              \
-    Q_IMPORT_PLUGIN(StartupFeedbackEffectFactory)                                         \
-    Q_IMPORT_PLUGIN(ThumbnailAsideEffectFactory)                                          \
-    Q_IMPORT_PLUGIN(TouchPointsEffectFactory)                                             \
-    Q_IMPORT_PLUGIN(TrackMouseEffectFactory)                                              \
-    Q_IMPORT_PLUGIN(WindowGeometryFactory)                                                \
-    Q_IMPORT_PLUGIN(WobblyWindowsEffectFactory)                                           \
-    Q_IMPORT_PLUGIN(ZoomEffectFactory)
+    KWIN_IMPORT_BUILTIN_EFFECT(BlurEffectFactory)                                         \
+    KWIN_IMPORT_BUILTIN_EFFECT(ColorPickerEffectFactory)                                  \
+    KWIN_IMPORT_BUILTIN_EFFECT(ContrastEffectFactory)                                     \
+    KWIN_IMPORT_BUILTIN_EFFECT(DesktopGridEffectFactory)                                  \
+    KWIN_IMPORT_BUILTIN_EFFECT(DimInactiveEffectFactory)                                  \
+    KWIN_IMPORT_BUILTIN_EFFECT(FallApartEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(GlideEffectFactory)                                        \
+    KWIN_IMPORT_BUILTIN_EFFECT(HighlightWindowEffectFactory)                              \
+    KWIN_IMPORT_BUILTIN_EFFECT(InvertEffectFactory)                                       \
+    KWIN_IMPORT_BUILTIN_EFFECT(KscreenEffectFactory)                                      \
+    KWIN_IMPORT_BUILTIN_EFFECT(LookingGlassEffectFactory)                                 \
+    KWIN_IMPORT_BUILTIN_EFFECT(MagicLampEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(MagnifierEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(MouseClickEffectFactory)                                   \
+    KWIN_IMPORT_BUILTIN_EFFECT(MouseMarkEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(OverviewEffectFactory)                                     \
+    KWIN_IMPORT_BUILTIN_EFFECT(PresentWindowsEffectFactory)                               \
+    KWIN_IMPORT_BUILTIN_EFFECT(ResizeEffectFactory)                                       \
+    KWIN_IMPORT_BUILTIN_EFFECT(ScreenEdgeEffectFactory)                                   \
+    KWIN_IMPORT_BUILTIN_EFFECT(ScreenShotEffectFactory)                                   \
+    KWIN_IMPORT_BUILTIN_EFFECT(ScreenTransformEffectFactory)                              \
+    KWIN_IMPORT_BUILTIN_EFFECT(SheetEffectFactory)                                        \
+    KWIN_IMPORT_BUILTIN_EFFECT(ShowFpsEffectFactory)                                      \
+    KWIN_IMPORT_BUILTIN_EFFECT(ShowPaintEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(SlideEffectFactory)                                        \
+    KWIN_IMPORT_BUILTIN_EFFECT(SlideBackEffectFactory)                                    \
+    KWIN_IMPORT_BUILTIN_EFFECT(SlidingPopupsEffectFactory)                                \
+    KWIN_IMPORT_BUILTIN_EFFECT(SnapHelperEffectFactory)                                   \
+    KWIN_IMPORT_BUILTIN_EFFECT(StartupFeedbackEffectFactory)                              \
+    KWIN_IMPORT_BUILTIN_EFFECT(ThumbnailAsideEffectFactory)                               \
+    KWIN_IMPORT_BUILTIN_EFFECT(TouchPointsEffectFactory)                                  \
+    KWIN_IMPORT_BUILTIN_EFFECT(TrackMouseEffectFactory)                                   \
+    KWIN_IMPORT_BUILTIN_EFFECT(WindowGeometryFactory)                                     \
+    KWIN_IMPORT_BUILTIN_EFFECT(WobblyWindowsEffectFactory)                                \
+    KWIN_IMPORT_BUILTIN_EFFECT(ZoomEffectFactory)
 
 #endif

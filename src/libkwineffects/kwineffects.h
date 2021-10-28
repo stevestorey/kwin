@@ -179,6 +179,29 @@ X-KDE-Library=kwin4_effect_cooleffect
         KWIN_EFFECT_API_VERSION_MAJOR, KWIN_EFFECT_API_VERSION_MINOR )
 
 /**
+ * @internal
+ */
+QVector<QStaticPlugin> KWINEFFECTS_EXPORT registeredBuiltInEffects();
+
+/**
+ * @internal
+ */
+void KWINEFFECTS_EXPORT registerBuiltInEffect(QStaticPlugin staticPlugin);
+
+/**
+ * @internal
+ */
+#define KWIN_IMPORT_BUILTIN_EFFECT(PLUGIN) \
+        extern const QT_PREPEND_NAMESPACE(QStaticPlugin) qt_static_plugin_##PLUGIN(); \
+        class Static##PLUGIN##PluginInstance{ \
+        public: \
+                Static##PLUGIN##PluginInstance() { \
+                    KWin::registerBuiltInEffect(qt_static_plugin_##PLUGIN()); \
+                } \
+        }; \
+       static Static##PLUGIN##PluginInstance static##PLUGIN##Instance;
+
+/**
  * EffectWindow::setData() and EffectWindow::data() global roles.
  * All values between 0 and 999 are reserved for global roles.
  */

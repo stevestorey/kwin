@@ -201,7 +201,7 @@ StaticPluginEffectLoader::StaticPluginEffectLoader(QObject *parent)
     : AbstractEffectLoader(parent)
     , m_queue(new EffectLoadQueue<StaticPluginEffectLoader, QString>(this))
 {
-    const QVector<QStaticPlugin> staticPlugins = QPluginLoader::staticPlugins();
+    const QVector<QStaticPlugin> staticPlugins = registeredBuiltInEffects();
     for (const QStaticPlugin &staticPlugin : staticPlugins) {
         const QJsonObject rootMetaData = staticPlugin.metaData();
         if (rootMetaData.value(QLatin1String("IID")) != QLatin1String(EffectPluginFactory_iid)) {
