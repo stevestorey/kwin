@@ -3,7 +3,6 @@
 
 # Source files
 set(screenshot_SOURCES
-    main.cpp
     screenshot.cpp
     screenshotdbusinterface1.cpp
     screenshotdbusinterface2.cpp

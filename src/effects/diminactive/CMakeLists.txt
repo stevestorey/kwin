@@ -3,7 +3,6 @@
 
 set(diminactive_SOURCES
     diminactive.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(diminactive_SOURCES

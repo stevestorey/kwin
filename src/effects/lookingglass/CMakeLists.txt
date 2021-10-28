@@ -3,7 +3,6 @@
 
 set(lookingglass_SOURCES
     lookingglass.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(lookingglass_SOURCES

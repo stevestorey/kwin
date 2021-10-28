@@ -13,6 +13,7 @@
 #include "wayland_server.h"
 #include "workspace.h"
 #include "scripting/scripting.h"
+#include "effect_builtins.h"
 
 #define private public
 #include "screenedge.h"

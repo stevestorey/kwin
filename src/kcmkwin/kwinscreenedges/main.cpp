@@ -10,6 +10,7 @@
 */
 
 #include "main.h"
+#include <effect_builtins.h>
 #include <kwin_effects_interface.h>
 
 #include <KAboutData>
@@ -89,9 +90,9 @@ void KWinScreenEdgesConfig::save()
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
                                              QStringLiteral("/Effects"),
                                              QDBusConnection::sessionBus());
-    interface.reconfigureEffect(QStringLiteral("overview"));
-    interface.reconfigureEffect(QStringLiteral("presentwindows"));
-    interface.reconfigureEffect(QStringLiteral("desktopgrid"));
+    interface.reconfigureEffect(BuiltInEffects::nameForEffect(BuiltInEffect::Overview));
+    interface.reconfigureEffect(BuiltInEffects::nameForEffect(BuiltInEffect::PresentWindows));
+    interface.reconfigureEffect(BuiltInEffects::nameForEffect(BuiltInEffect::DesktopGrid));
 
     KCModule::save();
 }
@@ -110,6 +111,12 @@ void KWinScreenEdgesConfig::showEvent(QShowEvent *e)
     monitorShowEvent();
 }
 
+// Copied from kcmkwin/kwincompositing/main.cpp
+bool KWinScreenEdgesConfig::effectEnabled(const BuiltInEffect &effect, const KConfigGroup &cfg) const
+{
+    return cfg.readEntry(BuiltInEffects::nameForEffect(effect) + "Enabled", BuiltInEffects::enabledByDefault(effect));
+}
+
 //-----------------------------------------------------------------------------
 // Monitor
 
@@ -122,13 +129,12 @@ void KWinScreenEdgesConfig::monitorInit()
     m_form->monitorAddItem(i18n("Activity Manager"));
     m_form->monitorAddItem(i18n("Application Launcher"));
 
-    // TODO: Find a better way to get the display name of the present windows, the
-    // desktop grid, and the overview effect. Maybe install metadata.json files?
-    const QString presentWindowsName = i18n("Present Windows");
+    // Add the effects
+    const QString presentWindowsName = BuiltInEffects::effectData(BuiltInEffect::PresentWindows).displayName;
     m_form->monitorAddItem(i18n("%1 - All Desktops", presentWindowsName));
     m_form->monitorAddItem(i18n("%1 - Current Desktop", presentWindowsName));
     m_form->monitorAddItem(i18n("%1 - Current Application", presentWindowsName));
-    m_form->monitorAddItem(i18n("Desktop Grid"));
+    m_form->monitorAddItem(BuiltInEffects::effectData(BuiltInEffect::DesktopGrid).displayName);
 
     m_form->monitorAddItem(i18n("Toggle window switching"));
     m_form->monitorAddItem(i18n("Toggle alternative window switching"));
@@ -273,16 +279,16 @@ void KWinScreenEdgesConfig::monitorShowEvent()
     KConfigGroup config(m_config, "Plugins");
 
     // Present Windows
-    bool enabled = config.readEntry("presentwindowsEnabled", true);
+    bool enabled = effectEnabled(BuiltInEffect::PresentWindows, config);
     m_form->monitorItemSetEnabled(PresentWindowsCurrent, enabled);
     m_form->monitorItemSetEnabled(PresentWindowsAll, enabled);
 
     // Desktop Grid
-    enabled = config.readEntry("desktopgridEnabled", true);
+    enabled = effectEnabled(BuiltInEffect::DesktopGrid, config);
     m_form->monitorItemSetEnabled(DesktopGrid, enabled);
 
     // Overview
-    enabled = config.readEntry("overviewEnabled", true);
+    enabled = effectEnabled(BuiltInEffect::Overview, config);
     m_form->monitorItemSetEnabled(Overview, enabled);
 
     // tabbox, depends on reasonable focus policy.

@@ -2,7 +2,6 @@
 # Effect
 
 set(showfps_SOURCES
-    main.cpp
     showfps.cpp
 )
 

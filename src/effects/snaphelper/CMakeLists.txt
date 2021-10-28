@@ -3,7 +3,6 @@
 
 # Source files
 set(snaphelper_SOURCES
-    main.cpp
     snaphelper.cpp
 )
 

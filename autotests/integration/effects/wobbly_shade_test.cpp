@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "wayland_server.h"
 #include "workspace.h"
+#include "effect_builtins.h"
 
 #include <KConfigGroup>
 
@@ -97,8 +98,8 @@ void WobblyWindowsShadeTest::testShadeMove()
 {
     // this test simulates the condition from BUG 390953
     EffectsHandlerImpl *e = static_cast<EffectsHandlerImpl*>(effects);
-    QVERIFY(e->loadEffect(QStringLiteral("wobblywindows")));
-    QVERIFY(e->isEffectLoaded(QStringLiteral("wobblywindows")));
+    QVERIFY(e->loadEffect(BuiltInEffects::nameForEffect(BuiltInEffect::WobblyWindows)));
+    QVERIFY(e->isEffectLoaded(BuiltInEffects::nameForEffect(BuiltInEffect::WobblyWindows)));
 
 
     QScopedPointer<xcb_connection_t, XcbConnectionDeleter> c(xcb_connect(nullptr, nullptr));

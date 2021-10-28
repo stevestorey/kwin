@@ -2,7 +2,6 @@
 # Effect
 
 set(thumbnailaside_SOURCES
-    main.cpp
     thumbnailaside.cpp
 )
 

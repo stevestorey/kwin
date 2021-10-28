@@ -2,7 +2,6 @@
 # Effect
 
 set(wobblywindows_SOURCES
-    main.cpp
     wobblywindows.cpp
 )
 

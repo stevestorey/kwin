@@ -4,7 +4,6 @@
 set(blur_SOURCES
     blur.cpp
     blurshader.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(blur_SOURCES

@@ -3,7 +3,6 @@
 install(FILES main.qml DESTINATION ${KDE_INSTALL_DATADIR}/kwin/effects/presentwindows/)
 
 set(presentwindows_SOURCES
-    main.cpp
     presentwindows.cpp
     presentwindows_proxy.cpp
 )

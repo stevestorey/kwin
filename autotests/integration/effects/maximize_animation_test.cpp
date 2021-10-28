@@ -18,6 +18,8 @@
 #include "wayland_server.h"
 #include "workspace.h"
 
+#include "effect_builtins.h"
+
 #include <KWayland/Client/surface.h>
 
 using namespace KWin;

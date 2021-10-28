@@ -2,7 +2,6 @@
 # Effect
 
 set(screentransform_SOURCES
-    main.cpp
     screentransform.cpp
 )
 

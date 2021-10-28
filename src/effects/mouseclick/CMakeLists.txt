@@ -2,7 +2,6 @@
 # Effect
 
 set(mouseclick_SOURCES
-    main.cpp
     mouseclick.cpp
 )
 

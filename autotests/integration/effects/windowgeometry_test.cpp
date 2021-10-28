@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "wayland_server.h"
 #include "workspace.h"
+#include "effect_builtins.h"
 
 #include <KConfigGroup>
 
@@ -52,7 +53,7 @@ void WindowGeometryTest::initTestCase()
     for (QString name : builtinNames) {
         plugins.writeEntry(name + QStringLiteral("Enabled"), false);
     }
-    plugins.writeEntry(QStringLiteral("windowgeometryEnabled"), true);
+    plugins.writeEntry(BuiltInEffects::nameForEffect(BuiltInEffect::WindowGeometry) + QStringLiteral("Enabled"), true);
 
     config->sync();
     kwinApp()->setConfig(config);
@@ -77,7 +78,7 @@ void WindowGeometryTest::testStartup()
 {
     // just a test to load the effect to verify it doesn't crash
     EffectsHandlerImpl *e = static_cast<EffectsHandlerImpl*>(effects);
-    QVERIFY(e->isEffectLoaded(QStringLiteral("windowgeometry")));
+    QVERIFY(e->isEffectLoaded(BuiltInEffects::nameForEffect(BuiltInEffect::WindowGeometry)));
 }
 
 WAYLANDTEST_MAIN(WindowGeometryTest)

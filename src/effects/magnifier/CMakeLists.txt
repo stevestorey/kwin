@@ -3,7 +3,6 @@
 
 set(magnifier_SOURCES
     magnifier.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(magnifier_SOURCES

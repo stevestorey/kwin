@@ -4,7 +4,6 @@
 # Source files
 set(fallapart_SOURCES
     fallapart.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(fallapart_SOURCES

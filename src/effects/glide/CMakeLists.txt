@@ -3,7 +3,6 @@
 
 set(glide_SOURCES
     glide.cpp
-    main.cpp
 )
 
 kconfig_add_kcfg_files(glide_SOURCES
