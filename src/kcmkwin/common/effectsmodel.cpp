@@ -11,6 +11,8 @@
 #include "effectsmodel.h"
 
 #include <config-kwin.h>
+#include <effect_builtins.h>
+#include <kwineffects.h>
 #include <kwin_effects_interface.h>
 
 #include <KAboutData>
@@ -28,10 +30,11 @@
 #include <QDBusPendingCall>
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QDirIterator>
 #include <QPushButton>
-#include <QStandardPaths>
+#include <QStaticPlugin>
 #include <QVBoxLayout>
+
+KWIN_IMPORT_BUILTIN_EFFECTS
 
 namespace KWin
 {
@@ -225,16 +228,13 @@ bool EffectsModel::setData(const QModelIndex &index, const QVariant &value, int 
 
 void EffectsModel::loadBuiltInEffects(const KConfigGroup &kwinConfig)
 {
-    const QString rootDirectory = QStandardPaths::locate(QStandardPaths::GenericDataLocation,
-                                                         QStringLiteral("kwin/builtin-effects"),
-                                                         QStandardPaths::LocateDirectory);
+    const QVector<QStaticPlugin> staticPlugins = QPluginLoader::staticPlugins();
+    for (const QStaticPlugin &plugin : staticPlugins) {
+        if (plugin.metaData().value("IID").toString() != EffectPluginFactory_iid) {
+            continue;
+        }
 
-    const QStringList nameFilters{QStringLiteral("metadata.json")};
-    QDirIterator it(rootDirectory, nameFilters, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        it.next();
-
-        const KPluginMetaData metaData(it.filePath());
+        const KPluginMetaData metaData = KPluginMetaData(plugin.metaData().value("MetaData").toObject(), QString());
         if (!metaData.isValid()) {
             continue;
         }
