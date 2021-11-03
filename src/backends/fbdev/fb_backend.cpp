@@ -7,6 +7,7 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "fb_backend.h"
+#include "fb_qpainter_backend.h"
 
 #include "backends/libinput/libinputbackend.h"
 #include "composite.h"
@@ -14,7 +15,6 @@
 #include "main.h"
 #include "platform.h"
 #include "renderloop_p.h"
-#include "scene_qpainter_fb_backend.h"
 #include "session.h"
 #include "softwarevsyncmonitor.h"
 #include "udev.h"

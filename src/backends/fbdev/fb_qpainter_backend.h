@@ -6,8 +6,8 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_SCENE_QPAINTER_FB_BACKEND_H
-#define KWIN_SCENE_QPAINTER_FB_BACKEND_H
+#pragma once
+
 #include "qpainterbackend.h"
 
 #include <QObject>
@@ -45,5 +45,3 @@ private:
 };
 
 }
-
-#endif

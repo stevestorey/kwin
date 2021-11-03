@@ -6,7 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "scene_qpainter_fb_backend.h"
+#include "fb_qpainter_backend.h"
 #include "fb_backend.h"
 #include "composite.h"
 #include "cursor.h"
