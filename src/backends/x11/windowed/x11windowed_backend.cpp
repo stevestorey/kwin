@@ -9,11 +9,11 @@
 #include "x11windowed_backend.h"
 #include "x11windowed_output.h"
 #include <config-kwin.h>
-#include "scene_qpainter_x11_backend.h"
+#include "x11windowed_qpainter_backend.h"
 #include "logging.h"
 #include "wayland_server.h"
 #include "xcbutils.h"
-#include "egl_x11_backend.h"
+#include "x11windowed_egl_backend.h"
 #include "screens.h"
 #include "session.h"
 #include <kwinxrenderutils.h>
@@ -661,7 +661,7 @@ X11WindowedInputDevice *X11WindowedBackend::touchDevice() const
 
 OpenGLBackend *X11WindowedBackend::createOpenGLBackend()
 {
-    return  new EglX11Backend(this);
+    return new X11WindowedEglBackend(this);
 }
 
 QPainterBackend *X11WindowedBackend::createQPainterBackend()

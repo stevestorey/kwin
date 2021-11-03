@@ -6,7 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "egl_x11_backend.h"
+#include "x11windowed_egl_backend.h"
 // kwin
 #include "basiceglsurfacetexture_internal.h"
 #include "basiceglsurfacetexture_wayland.h"
@@ -21,15 +21,15 @@
 namespace KWin
 {
 
-EglX11Backend::EglX11Backend(X11WindowedBackend *backend)
+X11WindowedEglBackend::X11WindowedEglBackend(X11WindowedBackend *backend)
     : EglOnXBackend(backend->connection(), backend->display(), backend->rootWindow(), backend->screenNumer(), XCB_WINDOW_NONE)
     , m_backend(backend)
 {
 }
 
-EglX11Backend::~EglX11Backend() = default;
+X11WindowedEglBackend::~X11WindowedEglBackend() = default;
 
-void EglX11Backend::init()
+void X11WindowedEglBackend::init()
 {
     EglOnXBackend::init();
 
@@ -38,14 +38,14 @@ void EglX11Backend::init()
     }
 }
 
-void EglX11Backend::cleanupSurfaces()
+void X11WindowedEglBackend::cleanupSurfaces()
 {
     for (auto it = m_surfaces.begin(); it != m_surfaces.end(); ++it) {
         eglDestroySurface(eglDisplay(), *it);
     }
 }
 
-bool EglX11Backend::createSurfaces()
+bool X11WindowedEglBackend::createSurfaces()
 {
     const auto &outputs = m_backend->outputs();
     for (const auto &output : outputs) {
@@ -62,20 +62,20 @@ bool EglX11Backend::createSurfaces()
     return true;
 }
 
-QRegion EglX11Backend::beginFrame(AbstractOutput *output)
+QRegion X11WindowedEglBackend::beginFrame(AbstractOutput *output)
 {
     makeContextCurrent(m_surfaces[output]);
     setupViewport(output);
     return output->geometry();
 }
 
-void EglX11Backend::setupViewport(AbstractOutput *output)
+void X11WindowedEglBackend::setupViewport(AbstractOutput *output)
 {
     const QSize size = output->pixelSize() * output->scale();
     glViewport(0, 0, size.width(), size.height());
 }
 
-void EglX11Backend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
+void X11WindowedEglBackend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
 {
     Q_UNUSED(damagedRegion)
 
@@ -84,7 +84,7 @@ void EglX11Backend::endFrame(AbstractOutput *output, const QRegion &renderedRegi
     presentSurface(m_surfaces[output], renderedRegion, output->geometry());
 }
 
-void EglX11Backend::presentSurface(EGLSurface surface, const QRegion &damage, const QRect &screenGeometry)
+void X11WindowedEglBackend::presentSurface(EGLSurface surface, const QRegion &damage, const QRect &screenGeometry)
 {
     if (damage.isEmpty()) {
         return;
@@ -102,12 +102,12 @@ void EglX11Backend::presentSurface(EGLSurface surface, const QRegion &damage, co
     }
 }
 
-SurfaceTexture *EglX11Backend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
+SurfaceTexture *X11WindowedEglBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
 {
     return new BasicEGLSurfaceTextureWayland(this, pixmap);
 }
 
-SurfaceTexture *EglX11Backend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
+SurfaceTexture *X11WindowedEglBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
 {
     return new BasicEGLSurfaceTextureInternal(this, pixmap);
 }

@@ -1,9 +1,9 @@
 set(X11BACKEND_SOURCES
-    egl_x11_backend.cpp
     logging.cpp
-    scene_qpainter_x11_backend.cpp
     x11windowed_backend.cpp
+    x11windowed_egl_backend.cpp
     x11windowed_output.cpp
+    x11windowed_qpainter_backend.cpp
 )
 
 add_library(KWinWaylandX11Backend MODULE ${X11BACKEND_SOURCES})

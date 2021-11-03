@@ -6,8 +6,8 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_EGL_X11_BACKEND_H
-#define KWIN_EGL_X11_BACKEND_H
+#pragma once
+
 #include "eglonxbackend.h"
 
 #include <QMap>
@@ -20,13 +20,13 @@ class X11WindowedBackend;
 /**
  * @brief OpenGL Backend using Egl windowing system over an X overlay window.
  */
-class EglX11Backend : public EglOnXBackend
+class X11WindowedEglBackend : public EglOnXBackend
 {
     Q_OBJECT
 
 public:
-    explicit EglX11Backend(X11WindowedBackend *backend);
-    ~EglX11Backend() override;
+    explicit X11WindowedEglBackend(X11WindowedBackend *backend);
+    ~X11WindowedEglBackend() override;
 
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
     SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
@@ -47,5 +47,3 @@ private:
 };
 
 } // namespace
-
-#endif
