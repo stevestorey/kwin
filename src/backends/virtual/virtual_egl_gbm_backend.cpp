@@ -6,7 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "egl_gbm_backend.h"
+#include "virtual_egl_gbm_backend.h"
 // kwin
 #include "basiceglsurfacetexture_internal.h"
 #include "basiceglsurfacetexture_wayland.h"
@@ -30,7 +30,7 @@
 namespace KWin
 {
 
-EglGbmBackend::EglGbmBackend(VirtualBackend *b)
+VirtualEglGbmBackend::VirtualEglGbmBackend(VirtualBackend *b)
     : AbstractEglBackend()
     , m_backend(b)
 {
@@ -38,7 +38,7 @@ EglGbmBackend::EglGbmBackend(VirtualBackend *b)
     setIsDirectRendering(true);
 }
 
-EglGbmBackend::~EglGbmBackend()
+VirtualEglGbmBackend::~VirtualEglGbmBackend()
 {
     while (GLRenderTarget::isRenderTargetBound()) {
         GLRenderTarget::popRenderTarget();
@@ -48,7 +48,7 @@ EglGbmBackend::~EglGbmBackend()
     cleanup();
 }
 
-bool EglGbmBackend::initializeEgl()
+bool VirtualEglGbmBackend::initializeEgl()
 {
     initClientExtensions();
     EGLDisplay display = m_backend->sceneEglDisplay();
@@ -70,7 +70,7 @@ bool EglGbmBackend::initializeEgl()
     return initEglAPI();
 }
 
-void EglGbmBackend::init()
+void VirtualEglGbmBackend::init()
 {
     if (!initializeEgl()) {
         setFailed("Could not initialize egl");
@@ -95,7 +95,7 @@ void EglGbmBackend::init()
         return;
     }
     if (checkGLError("Init")) {
-        setFailed("Error during init of EglGbmBackend");
+        setFailed("Error during init of VirtualEglGbmBackend");
         return;
     }
 
@@ -103,7 +103,7 @@ void EglGbmBackend::init()
     initWayland();
 }
 
-bool EglGbmBackend::initRenderingContext()
+bool VirtualEglGbmBackend::initRenderingContext()
 {
     initBufferConfigs();
 
@@ -114,7 +114,7 @@ bool EglGbmBackend::initRenderingContext()
     return makeCurrent();
 }
 
-bool EglGbmBackend::initBufferConfigs()
+bool VirtualEglGbmBackend::initBufferConfigs()
 {
     const EGLint config_attribs[] = {
         EGL_SURFACE_TYPE,         EGL_WINDOW_BIT,
@@ -140,17 +140,17 @@ bool EglGbmBackend::initBufferConfigs()
     return true;
 }
 
-SurfaceTexture *EglGbmBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
+SurfaceTexture *VirtualEglGbmBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
 {
     return new BasicEGLSurfaceTextureInternal(this, pixmap);
 }
 
-SurfaceTexture *EglGbmBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
+SurfaceTexture *VirtualEglGbmBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
 {
     return new BasicEGLSurfaceTextureWayland(this, pixmap);
 }
 
-QRegion EglGbmBackend::beginFrame(AbstractOutput *output)
+QRegion VirtualEglGbmBackend::beginFrame(AbstractOutput *output)
 {
     Q_UNUSED(output)
     if (!GLRenderTarget::isRenderTargetBound()) {
@@ -190,7 +190,7 @@ static void convertFromGLImage(QImage &img, int w, int h)
     img = img.mirrored();
 }
 
-void EglGbmBackend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
+void VirtualEglGbmBackend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
 {
     Q_UNUSED(renderedRegion)
     Q_UNUSED(damagedRegion)

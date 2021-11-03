@@ -6,8 +6,8 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_EGL_GBM_BACKEND_H
-#define KWIN_EGL_GBM_BACKEND_H
+#pragma once
+
 #include "abstract_egl_backend.h"
 
 namespace KWin
@@ -19,13 +19,13 @@ class GLRenderTarget;
 /**
  * @brief OpenGL Backend using Egl on a GBM surface.
  */
-class EglGbmBackend : public AbstractEglBackend
+class VirtualEglGbmBackend : public AbstractEglBackend
 {
     Q_OBJECT
 
 public:
-    EglGbmBackend(VirtualBackend *b);
-    ~EglGbmBackend() override;
+    VirtualEglGbmBackend(VirtualBackend *b);
+    ~VirtualEglGbmBackend() override;
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
     SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
     QRegion beginFrame(AbstractOutput *output) override;
@@ -43,5 +43,3 @@ private:
 };
 
 } // namespace
-
-#endif

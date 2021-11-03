@@ -6,7 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "scene_qpainter_virtual_backend.h"
+#include "virtual_qpainter_backend.h"
 #include "cursor.h"
 #include "screens.h"
 #include "softwarevsyncmonitor.h"

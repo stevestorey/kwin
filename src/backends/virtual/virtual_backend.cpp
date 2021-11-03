@@ -7,11 +7,11 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 #include "virtual_backend.h"
-#include "virtual_output.h"
-#include "scene_qpainter_virtual_backend.h"
 #include "session.h"
+#include "virtual_egl_gbm_backend.h"
+#include "virtual_output.h"
+#include "virtual_qpainter_backend.h"
 #include "wayland_server.h"
-#include "egl_gbm_backend.h"
 // Qt
 #include <QTemporaryDir>
 // system
@@ -238,7 +238,7 @@ QPainterBackend *VirtualBackend::createQPainterBackend()
 
 OpenGLBackend *VirtualBackend::createOpenGLBackend()
 {
-    return new EglGbmBackend(this);
+    return new VirtualEglGbmBackend(this);
 }
 
 Outputs VirtualBackend::outputs() const
