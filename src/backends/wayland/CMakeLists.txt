@@ -1,12 +1,12 @@
 set(WAYLAND_BACKEND_SOURCES
     logging.cpp
-    scene_qpainter_wayland_backend.cpp
+    wayland_qpainter_backend.cpp
     wayland_backend.cpp
     wayland_output.cpp
 )
 
 if (HAVE_WAYLAND_EGL)
-    set(WAYLAND_BACKEND_SOURCES egl_wayland_backend.cpp ${WAYLAND_BACKEND_SOURCES})
+    set(WAYLAND_BACKEND_SOURCES wayland_egl_backend.cpp ${WAYLAND_BACKEND_SOURCES})
     if (HAVE_GBM)
         list(APPEND WAYLAND_BACKEND_SOURCES ../drm/gbm_dmabuf.cpp)
     endif()

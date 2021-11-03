@@ -7,8 +7,8 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_EGL_WAYLAND_BACKEND_H
-#define KWIN_EGL_WAYLAND_BACKEND_H
+#pragma once
+
 #include "abstract_egl_backend.h"
 #include "utils.h"
 // wayland
@@ -25,16 +25,15 @@ namespace Wayland
 {
 class WaylandBackend;
 class WaylandOutput;
-class EglWaylandBackend;
+class WaylandEglBackend;
 
-class EglWaylandOutput : public QObject
+class WaylandEglOutput : public QObject
 {
     Q_OBJECT
 public:
-    EglWaylandOutput(WaylandOutput *output, QObject *parent = nullptr);
-    ~EglWaylandOutput() override = default;
+    WaylandEglOutput(WaylandOutput *output, QObject *parent = nullptr);
 
-    bool init(EglWaylandBackend *backend);
+    bool init(WaylandEglBackend *backend);
     void updateSize();
 
 private:
@@ -46,7 +45,7 @@ private:
     int m_bufferAge = 0;
     DamageJournal m_damageJournal;
 
-    friend class EglWaylandBackend;
+    friend class WaylandEglBackend;
 };
 
 /**
@@ -61,12 +60,12 @@ private:
  * repaints, which is obviously not optimal. Best solution is probably to go for buffer_age extension
  * and make it the only available solution next to fullscreen repaints.
  */
-class EglWaylandBackend : public AbstractEglBackend
+class WaylandEglBackend : public AbstractEglBackend
 {
     Q_OBJECT
 public:
-    EglWaylandBackend(WaylandBackend *b);
-    ~EglWaylandBackend() override;
+    WaylandEglBackend(WaylandBackend *b);
+    ~WaylandEglBackend() override;
 
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
     SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
@@ -86,21 +85,19 @@ private:
     bool initBufferConfigs();
     bool initRenderingContext();
 
-    bool createEglWaylandOutput(AbstractOutput *output);
+    bool createWaylandEglOutput(AbstractOutput *output);
 
     void cleanupSurfaces() override;
-    void cleanupOutput(EglWaylandOutput *output);
+    void cleanupOutput(WaylandEglOutput *output);
 
-    bool makeContextCurrent(EglWaylandOutput *output);
-    void presentOnSurface(EglWaylandOutput *output, const QRegion &damagedRegion);
+    bool makeContextCurrent(WaylandEglOutput *output);
+    void presentOnSurface(WaylandEglOutput *output, const QRegion &damagedRegion);
 
     WaylandBackend *m_backend;
-    QMap<AbstractOutput *, EglWaylandOutput*> m_outputs;
+    QMap<AbstractOutput *, WaylandEglOutput *> m_outputs;
     bool m_havePlatformBase;
-    friend class EglWaylandTexture;
+    friend class WaylandEglTexture;
 };
 
 }
 }
-
-#endif

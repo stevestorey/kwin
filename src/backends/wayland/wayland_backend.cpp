@@ -11,7 +11,7 @@
 
 
 #if HAVE_WAYLAND_EGL
-#include "egl_wayland_backend.h"
+#include "wayland_egl_backend.h"
 #if HAVE_GBM
 #include "../drm/gbm_dmabuf.h"
 #include <gbm.h>
@@ -19,7 +19,7 @@
 #endif
 #include "logging.h"
 #include "renderloop_p.h"
-#include "scene_qpainter_wayland_backend.h"
+#include "wayland_qpainter_backend.h"
 #include "session.h"
 #include "wayland_output.h"
 
@@ -895,7 +895,7 @@ InputBackend *WaylandBackend::createInputBackend()
 OpenGLBackend *WaylandBackend::createOpenGLBackend()
 {
 #if HAVE_WAYLAND_EGL
-    return new EglWaylandBackend(this);
+    return new WaylandEglBackend(this);
 #else
     return nullptr;
 #endif

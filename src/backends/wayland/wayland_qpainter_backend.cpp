@@ -7,7 +7,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "scene_qpainter_wayland_backend.h"
+#include "wayland_qpainter_backend.h"
 #include "wayland_backend.h"
 #include "wayland_output.h"
 
