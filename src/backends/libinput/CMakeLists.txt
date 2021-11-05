@@ -23,3 +23,8 @@ target_sources(kwin PRIVATE
     libinputbackend.cpp
 )
 target_link_libraries(kwin Libinput::Libinput)
+
+qt_add_dbus_interface(cli_SRCS ${CMAKE_CURRENT_BINARY_DIR}/org.kde.kwin.InputDevice.xml InputDevice_interface)
+add_executable(kwin-inputdevice kwininputdevice-cli.cpp ${cli_SRCS})
+target_link_libraries(kwin-inputdevice Qt::DBus Qt::Core KF5::CoreAddons KF5::I18n)
+install(TARGETS kwin-inputdevice ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})

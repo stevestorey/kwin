@@ -688,7 +688,7 @@ void Device::setOutput(AbstractOutput *output)
 {
     m_output = output;
     if (m_output) {
-        writeEntry(ConfigKey::OutputName, output->uuid().toString());
+        writeEntry(ConfigKey::OutputName, output->name());
     } else {
         writeEntry(ConfigKey::OutputName, QString());
     }
