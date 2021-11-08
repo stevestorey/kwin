@@ -601,21 +601,6 @@ QSharedPointer<GLTexture> SceneOpenGL::textureForOutput(AbstractOutput* output) 
     return m_backend->textureForOutput(output);
 }
 
-SurfaceTexture *SceneOpenGL::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
-{
-    return m_backend->createSurfaceTextureInternal(pixmap);
-}
-
-SurfaceTexture *SceneOpenGL::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
-{
-    return m_backend->createSurfaceTextureWayland(pixmap);
-}
-
-SurfaceTexture *SceneOpenGL::createSurfaceTextureX11(SurfacePixmapX11 *pixmap)
-{
-    return m_backend->createSurfaceTextureX11(pixmap);
-}
-
 bool SceneOpenGL::supported(OpenGLBackend *backend)
 {
     const QByteArray forceEnv = qgetenv("KWIN_COMPOSE");

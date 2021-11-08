@@ -43,9 +43,6 @@ public:
     bool supportsNativeFence() const override;
     DecorationRenderer *createDecorationRenderer(Decoration::DecoratedClientImpl *impl) override;
     bool animationsSupported() const override;
-    SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
-    SurfaceTexture *createSurfaceTextureX11(SurfacePixmapX11 *pixmap) override;
-    SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
 
     bool debug() const { return m_debug; }
     void initDebugOutput();

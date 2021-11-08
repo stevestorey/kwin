@@ -6,7 +6,8 @@
 
 #include "surfaceitem_wayland.h"
 #include "composite.h"
-#include "scene.h"
+#include "renderbackend.h"
+#include "toplevel.h"
 
 #include <KWaylandServer/clientbuffer.h>
 #include <KWaylandServer/subcompositor_interface.h>
@@ -139,7 +140,7 @@ SurfacePixmap *SurfaceItemWayland::createPixmap()
 }
 
 SurfacePixmapWayland::SurfacePixmapWayland(SurfaceItemWayland *item, QObject *parent)
-    : SurfacePixmap(Compositor::self()->scene()->createSurfaceTextureWayland(this), parent)
+    : SurfacePixmap(Compositor::self()->backend()->createSurfaceTextureWayland(this), parent)
     , m_item(item)
 {
 }

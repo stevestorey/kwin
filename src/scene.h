@@ -37,10 +37,6 @@ class RenderLoop;
 class Shadow;
 class ShadowItem;
 class SurfaceItem;
-class SurfacePixmapInternal;
-class SurfacePixmapWayland;
-class SurfacePixmapX11;
-class SurfaceTexture;
 class WindowItem;
 
 // The base class for compositing backends.
@@ -177,10 +173,6 @@ public:
         Q_UNUSED(output);
         return {};
     }
-
-    virtual SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap);
-    virtual SurfaceTexture *createSurfaceTextureX11(SurfacePixmapX11 *pixmap);
-    virtual SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap);
 
     virtual void paintDesktop(int desktop, int mask, const QRegion &region, ScreenPaintData &data);
 

@@ -6,7 +6,8 @@
 
 #include "surfaceitem_internal.h"
 #include "composite.h"
-#include "scene.h"
+#include "renderbackend.h"
+#include "toplevel.h"
 
 namespace KWin
 {
@@ -44,7 +45,7 @@ void SurfaceItemInternal::handleBufferGeometryChanged(Toplevel *toplevel, const 
 }
 
 SurfacePixmapInternal::SurfacePixmapInternal(SurfaceItemInternal *item, QObject *parent)
-    : SurfacePixmap(Compositor::self()->scene()->createSurfaceTextureInternal(this), parent)
+    : SurfacePixmap(Compositor::self()->backend()->createSurfaceTextureInternal(this), parent)
     , m_item(item)
 {
 }

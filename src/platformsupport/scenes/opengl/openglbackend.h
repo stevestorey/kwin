@@ -10,10 +10,9 @@
 #ifndef KWIN_SCENE_OPENGL_BACKEND_H
 #define KWIN_SCENE_OPENGL_BACKEND_H
 
-#include <QObject>
-#include <QRegion>
+#include "renderbackend.h"
 
-#include <kwin_export.h>
+#include <QRegion>
 
 namespace KWin
 {
@@ -21,10 +20,6 @@ class AbstractOutput;
 class OpenGLBackend;
 class OverlayWindow;
 class SurfaceItem;
-class SurfacePixmapInternal;
-class SurfacePixmapX11;
-class SurfacePixmapWayland;
-class SurfaceTexture;
 class GLTexture;
 
 /**
@@ -41,7 +36,7 @@ class GLTexture;
  *
  * @author Martin Gräßlin <mgraesslin@kde.org>
  */
-class KWIN_EXPORT OpenGLBackend : public QObject
+class KWIN_EXPORT OpenGLBackend : public RenderBackend
 {
     Q_OBJECT
 
@@ -50,10 +45,6 @@ public:
     virtual ~OpenGLBackend();
 
     virtual void init() = 0;
-
-    virtual SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap);
-    virtual SurfaceTexture *createSurfaceTextureX11(SurfacePixmapX11 *pixmap);
-    virtual SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap);
 
     /**
      * Notifies about starting to paint.
