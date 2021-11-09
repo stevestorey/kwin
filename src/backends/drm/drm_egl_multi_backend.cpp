@@ -7,14 +7,14 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-#include "egl_multi_backend.h"
+#include "drm_egl_multi_backend.h"
 #include <config-kwin.h>
 #include "logging.h"
 #if HAVE_GBM
-#include "egl_gbm_backend.h"
+#include "drm_egl_gbm_backend.h"
 #endif
 #if HAVE_EGL_STREAMS
-#include "egl_stream_backend.h"
+#include "drm_egl_stream_backend.h"
 #endif
 #include "drm_backend.h"
 #include "drm_gpu.h"
@@ -22,17 +22,17 @@
 namespace KWin
 {
 
-EglMultiBackend::EglMultiBackend(DrmBackend *backend, AbstractEglDrmBackend *primaryEglBackend)
+DrmEglMultiBackend::DrmEglMultiBackend(DrmBackend *backend, DrmAbstractEglBackend *primaryEglBackend)
     : OpenGLBackend()
     , m_platform(backend)
 {
-    connect(m_platform, &DrmBackend::gpuAdded, this, &EglMultiBackend::addGpu);
-    connect(m_platform, &DrmBackend::gpuRemoved, this, &EglMultiBackend::removeGpu);
+    connect(m_platform, &DrmBackend::gpuAdded, this, &DrmEglMultiBackend::addGpu);
+    connect(m_platform, &DrmBackend::gpuRemoved, this, &DrmEglMultiBackend::removeGpu);
     m_backends.append(primaryEglBackend);
     setIsDirectRendering(true);
 }
 
-EglMultiBackend::~EglMultiBackend()
+DrmEglMultiBackend::~DrmEglMultiBackend()
 {
     for (int i = 1; i < m_backends.count(); i++) {
         delete m_backends[i];
@@ -41,7 +41,7 @@ EglMultiBackend::~EglMultiBackend()
     delete m_backends[0];
 }
 
-void EglMultiBackend::init()
+void DrmEglMultiBackend::init()
 {
     for (auto b : qAsConst(m_backends)) {
         b->init();
@@ -57,48 +57,48 @@ void EglMultiBackend::init()
     m_initialized = true;
 }
 
-QRegion EglMultiBackend::beginFrame(AbstractOutput *output)
+QRegion DrmEglMultiBackend::beginFrame(AbstractOutput *output)
 {
     return findBackend(output)->beginFrame(output);
 }
 
-void EglMultiBackend::endFrame(AbstractOutput *output, const QRegion &damage, const QRegion &damagedRegion)
+void DrmEglMultiBackend::endFrame(AbstractOutput *output, const QRegion &damage, const QRegion &damagedRegion)
 {
     findBackend(output)->endFrame(output, damage, damagedRegion);
 }
 
-bool EglMultiBackend::scanout(AbstractOutput *output, SurfaceItem *surfaceItem)
+bool DrmEglMultiBackend::scanout(AbstractOutput *output, SurfaceItem *surfaceItem)
 {
     return findBackend(output)->scanout(output, surfaceItem);
 }
 
-bool EglMultiBackend::makeCurrent()
+bool DrmEglMultiBackend::makeCurrent()
 {
     return m_backends[0]->makeCurrent();
 }
 
-void EglMultiBackend::doneCurrent()
+void DrmEglMultiBackend::doneCurrent()
 {
     m_backends[0]->doneCurrent();
 }
 
-SurfaceTexture *EglMultiBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
+SurfaceTexture *DrmEglMultiBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
 {
     return m_backends[0]->createSurfaceTextureInternal(pixmap);
 }
 
-SurfaceTexture *EglMultiBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
+SurfaceTexture *DrmEglMultiBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
 {
     return m_backends[0]->createSurfaceTextureWayland(pixmap);
 }
 
-QSharedPointer<GLTexture> EglMultiBackend::textureForOutput(AbstractOutput *requestedOutput) const
+QSharedPointer<GLTexture> DrmEglMultiBackend::textureForOutput(AbstractOutput *requestedOutput) const
 {
     // this assumes that all outputs are rendered on backend 0
     return m_backends[0]->textureForOutput(requestedOutput);
 }
 
-AbstractEglDrmBackend *EglMultiBackend::findBackend(AbstractOutput *output) const
+DrmAbstractEglBackend *DrmEglMultiBackend::findBackend(AbstractOutput *output) const
 {
     for (int i = 1; i < m_backends.count(); i++) {
         if (m_backends[i]->hasOutput(output)) {
@@ -108,21 +108,21 @@ AbstractEglDrmBackend *EglMultiBackend::findBackend(AbstractOutput *output) cons
     return m_backends[0];
 }
 
-bool EglMultiBackend::directScanoutAllowed(AbstractOutput *output) const
+bool DrmEglMultiBackend::directScanoutAllowed(AbstractOutput *output) const
 {
     return findBackend(output)->directScanoutAllowed(output);
 }
 
-void EglMultiBackend::addGpu(DrmGpu *gpu)
+void DrmEglMultiBackend::addGpu(DrmGpu *gpu)
 {
-    AbstractEglDrmBackend *backend;
+    DrmAbstractEglBackend *backend;
     if (gpu->useEglStreams()) {
 #if HAVE_EGL_STREAMS
-        backend = new EglStreamBackend(m_platform, gpu);
+        backend = new DrmEglStreamBackend(m_platform, gpu);
 #endif
     } else {
 #if HAVE_GBM
-        backend = new EglGbmBackend(m_platform, gpu);
+        backend = new DrmEglGbmBackend(m_platform, gpu);
 #endif
     }
     if (backend) {
@@ -133,7 +133,7 @@ void EglMultiBackend::addGpu(DrmGpu *gpu)
     }
 }
 
-void EglMultiBackend::removeGpu(DrmGpu *gpu)
+void DrmEglMultiBackend::removeGpu(DrmGpu *gpu)
 {
     auto it = std::find_if(m_backends.begin(), m_backends.end(), [gpu](const auto &backend) {
         return backend->gpu() == gpu;

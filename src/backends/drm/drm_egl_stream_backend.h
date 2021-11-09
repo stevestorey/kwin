@@ -6,9 +6,9 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_EGL_STREAM_BACKEND_H
-#define KWIN_EGL_STREAM_BACKEND_H
-#include "abstract_egl_drm_backend.h"
+#pragma once
+
+#include "drm_abstract_egl_backend.h"
 #include "basiceglsurfacetexture_wayland.h"
 #include <KWaylandServer/surface_interface.h>
 #include <KWaylandServer/eglstream_controller_interface.h>
@@ -27,12 +27,12 @@ class DrmPlane;
 /**
  * @brief OpenGL Backend using Egl with an EGLDevice.
  */
-class EglStreamBackend : public AbstractEglDrmBackend
+class DrmEglStreamBackend : public DrmAbstractEglBackend
 {
     Q_OBJECT
 public:
-    EglStreamBackend(DrmBackend *b, DrmGpu *gpu);
-    ~EglStreamBackend() override;
+    DrmEglStreamBackend(DrmBackend *b, DrmGpu *gpu);
+    ~DrmEglStreamBackend() override;
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
     SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
     QRegion beginFrame(AbstractOutput *output) override;
@@ -92,7 +92,7 @@ private:
 class EglStreamSurfaceTextureWayland : public BasicEGLSurfaceTextureWayland
 {
 public:
-    EglStreamSurfaceTextureWayland(EglStreamBackend *backend, SurfacePixmapWayland *pixmap);
+    EglStreamSurfaceTextureWayland(DrmEglStreamBackend *backend, SurfacePixmapWayland *pixmap);
     ~EglStreamSurfaceTextureWayland() override;
 
     bool create() override;
@@ -106,11 +106,9 @@ private:
     bool checkBuffer(KWaylandServer::SurfaceInterface *surface,
                      KWaylandServer::ClientBuffer *buffer);
 
-    EglStreamBackend *m_backend;
+    DrmEglStreamBackend *m_backend;
     GLuint m_fbo, m_rbo, m_textureId;
     GLenum m_format;
 };
 
 } // namespace
-
-#endif

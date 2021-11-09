@@ -6,7 +6,7 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#include "egl_stream_backend.h"
+#include "drm_egl_stream_backend.h"
 #include "basiceglsurfacetexture_internal.h"
 #include "composite.h"
 #include "drm_backend.h"
@@ -78,17 +78,17 @@ PFNEGLQUERYWAYLANDBUFFERWL pEglQueryWaylandBufferWL = nullptr;
 #define EGL_WAYLAND_Y_INVERTED_WL 0x31DB
 #endif
 
-EglStreamBackend::EglStreamBackend(DrmBackend *drmBackend, DrmGpu *gpu)
-    : AbstractEglDrmBackend(drmBackend, gpu)
+DrmEglStreamBackend::DrmEglStreamBackend(DrmBackend *drmBackend, DrmGpu *gpu)
+    : DrmAbstractEglBackend(drmBackend, gpu)
 {
 }
 
-EglStreamBackend::~EglStreamBackend()
+DrmEglStreamBackend::~DrmEglStreamBackend()
 {
     cleanup();
 }
 
-void EglStreamBackend::cleanupSurfaces()
+void DrmEglStreamBackend::cleanupSurfaces()
 {
     for (auto it = m_outputs.begin(); it != m_outputs.end(); ++it) {
         cleanupOutput(*it);
@@ -96,7 +96,7 @@ void EglStreamBackend::cleanupSurfaces()
     m_outputs.clear();
 }
 
-void EglStreamBackend::cleanupOutput(Output &o)
+void DrmEglStreamBackend::cleanupOutput(Output &o)
 {
     if (o.eglSurface != EGL_NO_SURFACE) {
         eglDestroySurface(eglDisplay(), o.eglSurface);
@@ -107,7 +107,7 @@ void EglStreamBackend::cleanupOutput(Output &o)
     o.shadowBuffer = nullptr;
 }
 
-bool EglStreamBackend::initializeEgl()
+bool DrmEglStreamBackend::initializeEgl()
 {
     initClientExtensions();
     EGLDisplay display = m_gpu->eglDisplay();
@@ -190,7 +190,7 @@ bool EglStreamBackend::initializeEgl()
     return true;
 }
 
-EglStreamBackend::StreamTexture *EglStreamBackend::lookupStreamTexture(KWaylandServer::SurfaceInterface *surface)
+DrmEglStreamBackend::StreamTexture *DrmEglStreamBackend::lookupStreamTexture(KWaylandServer::SurfaceInterface *surface)
 {
     auto it = m_streamTextures.find(surface);
     return it != m_streamTextures.end() ?
@@ -198,14 +198,14 @@ EglStreamBackend::StreamTexture *EglStreamBackend::lookupStreamTexture(KWaylandS
            nullptr;
 }
 
-void EglStreamBackend::destroyStreamTexture(KWaylandServer::SurfaceInterface *surface)
+void DrmEglStreamBackend::destroyStreamTexture(KWaylandServer::SurfaceInterface *surface)
 {
     const StreamTexture &st = m_streamTextures.take(surface);
     pEglDestroyStreamKHR(eglDisplay(), st.stream);
     glDeleteTextures(1, &st.texture);
 }
 
-void EglStreamBackend::attachStreamConsumer(KWaylandServer::SurfaceInterface *surface,
+void DrmEglStreamBackend::attachStreamConsumer(KWaylandServer::SurfaceInterface *surface,
                                             void *eglStream,
                                             wl_array *attribs)
 {
@@ -250,7 +250,7 @@ void EglStreamBackend::attachStreamConsumer(KWaylandServer::SurfaceInterface *su
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, 0);
 }
 
-void EglStreamBackend::init()
+void DrmEglStreamBackend::init()
 {
     if (!m_gpu->atomicModeSetting()) {
         setFailed("EGLStream backend requires atomic modesetting");
@@ -274,7 +274,7 @@ void EglStreamBackend::init()
         using namespace KWaylandServer;
         m_eglStreamControllerInterface = new EglStreamControllerInterface(waylandServer()->display());
         connect(m_eglStreamControllerInterface, &EglStreamControllerInterface::streamConsumerAttached, this,
-                &EglStreamBackend::attachStreamConsumer);
+                &DrmEglStreamBackend::attachStreamConsumer);
     } else {
         // secondary NVidia GPUs only import dumb buffers
         const auto outputs = m_gpu->outputs();
@@ -284,7 +284,7 @@ void EglStreamBackend::init()
     }
 }
 
-bool EglStreamBackend::initRenderingContext()
+bool DrmEglStreamBackend::initRenderingContext()
 {
     initBufferConfigs();
 
@@ -299,7 +299,7 @@ bool EglStreamBackend::initRenderingContext()
     return !m_outputs.isEmpty() && makeContextCurrent(m_outputs.first());
 }
 
-bool EglStreamBackend::resetOutput(Output &o)
+bool DrmEglStreamBackend::resetOutput(Output &o)
 {
     const auto &drmOutput = o.output;
     QSize sourceSize = drmOutput->sourceSize();
@@ -376,7 +376,7 @@ bool EglStreamBackend::resetOutput(Output &o)
     return true;
 }
 
-bool EglStreamBackend::addOutput(DrmAbstractOutput *output)
+bool DrmEglStreamBackend::addOutput(DrmAbstractOutput *output)
 {
     Q_ASSERT(output->gpu() == m_gpu);
     DrmOutput *drmOutput = qobject_cast<DrmOutput *>(output);
@@ -396,7 +396,7 @@ bool EglStreamBackend::addOutput(DrmAbstractOutput *output)
     }
 }
 
-void EglStreamBackend::removeOutput(DrmAbstractOutput *drmOutput)
+void DrmEglStreamBackend::removeOutput(DrmAbstractOutput *drmOutput)
 {
     Q_ASSERT(drmOutput->gpu() == m_gpu);
     auto it = std::find_if(m_outputs.begin(), m_outputs.end(),
@@ -414,7 +414,7 @@ void EglStreamBackend::removeOutput(DrmAbstractOutput *drmOutput)
     }
 }
 
-bool EglStreamBackend::makeContextCurrent(const Output &output)
+bool DrmEglStreamBackend::makeContextCurrent(const Output &output)
 {
     const EGLSurface surface = output.eglSurface;
     if (surface == EGL_NO_SURFACE) {
@@ -437,7 +437,7 @@ bool EglStreamBackend::makeContextCurrent(const Output &output)
     return true;
 }
 
-bool EglStreamBackend::initBufferConfigs()
+bool DrmEglStreamBackend::initBufferConfigs()
 {
     const EGLint configAttribs[] = {
         EGL_SURFACE_TYPE,         EGL_STREAM_BIT_KHR,
@@ -464,17 +464,17 @@ bool EglStreamBackend::initBufferConfigs()
     return true;
 }
 
-SurfaceTexture *EglStreamBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
+SurfaceTexture *DrmEglStreamBackend::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
 {
     return new BasicEGLSurfaceTextureInternal(this, pixmap);
 }
 
-SurfaceTexture *EglStreamBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
+SurfaceTexture *DrmEglStreamBackend::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
 {
     return new EglStreamSurfaceTextureWayland(this, pixmap);
 }
 
-bool EglStreamBackend::needsReset(const Output &o) const
+bool DrmEglStreamBackend::needsReset(const Output &o) const
 {
     if (o.targetPlane != o.output->pipeline()->pending.crtc->primaryPlane()) {
         return true;
@@ -491,7 +491,7 @@ bool EglStreamBackend::needsReset(const Output &o) const
     }
 }
 
-QRegion EglStreamBackend::beginFrame(AbstractOutput *drmOutput)
+QRegion DrmEglStreamBackend::beginFrame(AbstractOutput *drmOutput)
 {
     Q_ASSERT(m_outputs.contains(drmOutput));
     Output &o = m_outputs[drmOutput];
@@ -512,7 +512,7 @@ QRegion EglStreamBackend::beginFrame(AbstractOutput *drmOutput)
     }
 }
 
-void EglStreamBackend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
+void DrmEglStreamBackend::endFrame(AbstractOutput *output, const QRegion &renderedRegion, const QRegion &damagedRegion)
 {
     Q_ASSERT(m_outputs.contains(output));
     Q_UNUSED(renderedRegion);
@@ -559,7 +559,7 @@ void EglStreamBackend::endFrame(AbstractOutput *output, const QRegion &renderedR
     }
 }
 
-QSharedPointer<DrmBuffer> EglStreamBackend::renderTestFrame(DrmAbstractOutput *drmOutput)
+QSharedPointer<DrmBuffer> DrmEglStreamBackend::renderTestFrame(DrmAbstractOutput *drmOutput)
 {
     Q_ASSERT(m_outputs.contains(drmOutput));
     auto &output = m_outputs[drmOutput];
@@ -572,12 +572,12 @@ QSharedPointer<DrmBuffer> EglStreamBackend::renderTestFrame(DrmAbstractOutput *d
     }
 }
 
-bool EglStreamBackend::hasOutput(AbstractOutput *output) const
+bool DrmEglStreamBackend::hasOutput(AbstractOutput *output) const
 {
     return m_outputs.contains(output);
 }
 
-uint32_t EglStreamBackend::drmFormat() const
+uint32_t DrmEglStreamBackend::drmFormat() const
 {
     return DRM_FORMAT_XRGB8888;
 }
@@ -586,7 +586,7 @@ uint32_t EglStreamBackend::drmFormat() const
  * EglTexture
  ************************************************/
 
-EglStreamSurfaceTextureWayland::EglStreamSurfaceTextureWayland(EglStreamBackend *backend,
+EglStreamSurfaceTextureWayland::EglStreamSurfaceTextureWayland(DrmEglStreamBackend *backend,
                                                                SurfacePixmapWayland *pixmap)
     : BasicEGLSurfaceTextureWayland(backend, pixmap)
     , m_backend(backend)
@@ -733,7 +733,7 @@ bool EglStreamSurfaceTextureWayland::create()
 {
     using namespace KWaylandServer;
     SurfaceInterface *surface = m_pixmap->surface();
-    const EglStreamBackend::StreamTexture *st = m_backend->lookupStreamTexture(surface);
+    const DrmEglStreamBackend::StreamTexture *st = m_backend->lookupStreamTexture(surface);
     if (m_pixmap->buffer() && st != nullptr && checkBuffer(surface, m_pixmap->buffer())) {
 
         glGenTextures(1, &m_textureId);
@@ -761,7 +761,7 @@ void EglStreamSurfaceTextureWayland::update(const QRegion &region)
 {
     using namespace KWaylandServer;
     SurfaceInterface *surface = m_pixmap->surface();
-    const EglStreamBackend::StreamTexture *st = m_backend->lookupStreamTexture(surface);
+    const DrmEglStreamBackend::StreamTexture *st = m_backend->lookupStreamTexture(surface);
     if (m_pixmap->buffer() && st != nullptr && checkBuffer(surface, m_pixmap->buffer())) {
 
         if (attachBuffer(surface->buffer())) {

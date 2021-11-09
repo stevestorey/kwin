@@ -6,8 +6,8 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_SCENE_QPAINTER_DRM_BACKEND_H
-#define KWIN_SCENE_QPAINTER_DRM_BACKEND_H
+#pragma once
+
 #include "qpainterbackend.h"
 #include "utils.h"
 
@@ -47,5 +47,3 @@ private:
     DrmGpu *m_gpu;
 };
 }
-
-#endif

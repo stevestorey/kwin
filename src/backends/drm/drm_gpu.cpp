@@ -24,7 +24,7 @@
 #include "drm_lease_output.h"
 
 #if HAVE_GBM
-#include "egl_gbm_backend.h"
+#include "drm_egl_gbm_backend.h"
 #include <gbm.h>
 #include "gbm_dmabuf.h"
 #endif
@@ -555,12 +555,12 @@ void DrmGpu::removeOutput(DrmOutput *output)
     delete output;
 }
 
-AbstractEglDrmBackend *DrmGpu::eglBackend() const
+DrmAbstractEglBackend *DrmGpu::eglBackend() const
 {
     return m_eglBackend;
 }
 
-void DrmGpu::setEglBackend(AbstractEglDrmBackend *eglBackend)
+void DrmGpu::setEglBackend(DrmAbstractEglBackend *eglBackend)
 {
     m_eglBackend = eglBackend;
 }

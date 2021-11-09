@@ -9,30 +9,30 @@
 #include "drm_backend.h"
 #include "backends/libinput/libinputbackend.h"
 #include <config-kwin.h>
+#include "drm_egl_multi_backend.h"
+#include "drm_gpu.h"
 #include "drm_output.h"
 #include "drm_object_connector.h"
 #include "drm_object_crtc.h"
 #include "drm_object_plane.h"
+#include "drm_pipeline.h"
+#include "drm_qpainter_backend.h"
+#include "drm_virtual_output.h"
 #include "composite.h"
 #include "cursor.h"
 #include "logging.h"
 #include "main.h"
 #include "renderloop.h"
-#include "scene_qpainter_drm_backend.h"
 #include "session.h"
 #include "udev.h"
-#include "drm_gpu.h"
-#include "egl_multi_backend.h"
-#include "drm_pipeline.h"
-#include "drm_virtual_output.h"
 #include "waylandoutputconfig.h"
 #if HAVE_GBM
-#include "egl_gbm_backend.h"
+#include "drm_egl_gbm_backend.h"
 #include <gbm.h>
 #include "gbm_dmabuf.h"
 #endif
 #if HAVE_EGL_STREAMS
-#include "egl_stream_backend.h"
+#include "drm_egl_stream_backend.h"
 #endif
 // KF5
 #include <KCoreAddons>
@@ -52,10 +52,6 @@
 // drm
 #include <xf86drm.h>
 #include <libdrm/drm_mode.h>
-
-#include "drm_gpu.h"
-#include "egl_multi_backend.h"
-#include "drm_pipeline.h"
 
 namespace KWin
 {
@@ -625,16 +621,16 @@ OpenGLBackend *DrmBackend::createOpenGLBackend()
 {
 #if HAVE_EGL_STREAMS
     if (m_gpus.at(0)->useEglStreams()) {
-        auto backend = new EglStreamBackend(this, m_gpus.at(0));
+        auto backend = new DrmEglStreamBackend(this, m_gpus.at(0));
         AbstractEglBackend::setPrimaryBackend(backend);
         return backend;
     }
 #endif
 
 #if HAVE_GBM
-    auto primaryBackend = new EglGbmBackend(this, m_gpus.at(0));
+    auto primaryBackend = new DrmEglGbmBackend(this, m_gpus.at(0));
     AbstractEglBackend::setPrimaryBackend(primaryBackend);
-    EglMultiBackend *backend = new EglMultiBackend(this, primaryBackend);
+    DrmEglMultiBackend *backend = new DrmEglMultiBackend(this, primaryBackend);
     for (int i = 1; i < m_gpus.count(); i++) {
         backend->addGpu(m_gpus[i]);
     }

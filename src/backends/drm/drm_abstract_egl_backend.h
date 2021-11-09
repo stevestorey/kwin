@@ -7,8 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef KWIN_ABSTRACTEGLDRMBACKEND_H
-#define KWIN_ABSTRACTEGLDRMBACKEND_H
+#pragma once
 
 #include "abstract_egl_backend.h"
 
@@ -21,7 +20,7 @@ class DrmOutput;
 class DrmBuffer;
 class DrmAbstractOutput;
 
-class AbstractEglDrmBackend : public AbstractEglBackend
+class DrmAbstractEglBackend : public AbstractEglBackend
 {
     Q_OBJECT
 
@@ -64,12 +63,12 @@ public:
 
     virtual uint32_t drmFormat() const = 0;
 
-    static AbstractEglDrmBackend *renderingBackend() {
-        return static_cast<AbstractEglDrmBackend*>(primaryBackend());
+    static DrmAbstractEglBackend *renderingBackend() {
+        return static_cast<DrmAbstractEglBackend *>(primaryBackend());
     }
 
 protected:
-    AbstractEglDrmBackend(DrmBackend *drmBackend, DrmGpu *gpu);
+    DrmAbstractEglBackend(DrmBackend *drmBackend, DrmGpu *gpu);
 
     DrmBackend *m_backend;
     DrmGpu *m_gpu;
@@ -77,5 +76,3 @@ protected:
 };
 
 }
-
-#endif // KWIN_ABSTRACTEGLDRMBACKEND_H

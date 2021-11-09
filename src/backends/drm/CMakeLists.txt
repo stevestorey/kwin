@@ -1,30 +1,30 @@
 set(DRM_SOURCES
+    drm_abstract_egl_backend.cpp
+    drm_abstract_output.cpp
     drm_backend.cpp
+    drm_buffer.cpp
+    drm_egl_multi_backend.cpp
+    drm_gpu.cpp
+    drm_lease_output.cpp
     drm_object.cpp
     drm_property.cpp
     drm_object_connector.cpp
     drm_object_crtc.cpp
     drm_object_plane.cpp
     drm_output.cpp
-    drm_buffer.cpp
+    drm_pipeline.cpp
+    drm_qpainter_backend.cpp
+    drm_virtual_output.cpp
     edid.cpp
     logging.cpp
-    scene_qpainter_drm_backend.cpp
-    drm_gpu.cpp
-    egl_multi_backend.cpp
-    abstract_egl_drm_backend.cpp
     dumb_swapchain.cpp
     shadowbuffer.cpp
-    drm_pipeline.cpp
-    drm_abstract_output.cpp
-    drm_virtual_output.cpp
-    drm_lease_output.cpp
 )
 
 if (HAVE_GBM)
     set(DRM_SOURCES ${DRM_SOURCES}
-        egl_gbm_backend.cpp
         drm_buffer_gbm.cpp
+        drm_egl_gbm_backend.cpp
         gbm_surface.cpp
         gbm_dmabuf.cpp
     )
@@ -32,7 +32,7 @@ endif()
 
 if (HAVE_EGL_STREAMS)
     set(DRM_SOURCES ${DRM_SOURCES}
-        egl_stream_backend.cpp
+        drm_egl_stream_backend.cpp
     )
 endif()
 

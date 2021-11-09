@@ -25,8 +25,8 @@
 #if HAVE_GBM
 #include <gbm.h>
 
-#include "egl_gbm_backend.h"
 #include "drm_buffer_gbm.h"
+#include "drm_egl_gbm_backend.h"
 #endif
 
 #include <drm_fourcc.h>

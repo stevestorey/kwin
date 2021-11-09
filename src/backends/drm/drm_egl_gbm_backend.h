@@ -6,9 +6,9 @@
 
     SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KWIN_EGL_GBM_BACKEND_H
-#define KWIN_EGL_GBM_BACKEND_H
-#include "abstract_egl_drm_backend.h"
+#pragma once
+
+#include "drm_abstract_egl_backend.h"
 #include "utils.h"
 
 #include <kwinglutils.h>
@@ -37,12 +37,12 @@ class ShadowBuffer;
 /**
  * @brief OpenGL Backend using Egl on a GBM surface.
  */
-class EglGbmBackend : public AbstractEglDrmBackend
+class DrmEglGbmBackend : public DrmAbstractEglBackend
 {
     Q_OBJECT
 public:
-    EglGbmBackend(DrmBackend *drmBackend, DrmGpu *gpu);
-    ~EglGbmBackend() override;
+    DrmEglGbmBackend(DrmBackend *drmBackend, DrmGpu *gpu);
+    ~DrmEglGbmBackend() override;
 
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;
     SurfaceTexture *createSurfaceTextureWayland(SurfacePixmapWayland *pixmap) override;
@@ -117,5 +117,3 @@ private:
 };
 
 } // namespace
-
-#endif

@@ -7,20 +7,19 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-#ifndef EGLMULTIBACKEND_H
-#define EGLMULTIBACKEND_H
+#pragma once
 
-#include "abstract_egl_drm_backend.h"
+#include "drm_abstract_egl_backend.h"
 
 namespace KWin
 {
 
-class EglMultiBackend : public OpenGLBackend
+class DrmEglMultiBackend : public OpenGLBackend
 {
     Q_OBJECT
 public:
-    EglMultiBackend(DrmBackend *backend, AbstractEglDrmBackend *primaryEglBackend);
-    ~EglMultiBackend();
+    DrmEglMultiBackend(DrmBackend *backend, DrmAbstractEglBackend *primaryEglBackend);
+    ~DrmEglMultiBackend();
 
     void init() override;
 
@@ -43,12 +42,10 @@ public Q_SLOTS:
 
 private:
     DrmBackend *m_platform;
-    QVector<AbstractEglDrmBackend*> m_backends;
+    QVector<DrmAbstractEglBackend *> m_backends;
     bool m_initialized = false;
 
-    AbstractEglDrmBackend *findBackend(AbstractOutput *output) const;
+    DrmAbstractEglBackend *findBackend(AbstractOutput *output) const;
 };
 
 }
-
-#endif // EGLMULTIBACKEND_H

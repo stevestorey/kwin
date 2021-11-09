@@ -11,7 +11,7 @@
 #include <gbm.h>
 #include <errno.h>
 
-#include "abstract_egl_drm_backend.h"
+#include "drm_abstract_egl_backend.h"
 #include "drm_gpu.h"
 #include "logging.h"
 #include "kwineglutils_p.h"
