@@ -108,12 +108,7 @@ public:
 
     virtual bool directScanoutAllowed(AbstractOutput *output) const;
 
-    /**
-     * The backend specific extensions (e.g. EGL/GLX extensions).
-     *
-     * Not the OpenGL (ES) extension!
-     */
-    QList<QByteArray> extensions() const {
+    QList<QByteArray> openGLPlatformInterfaceExtensions() const override final {
         return m_extensions;
     }
 

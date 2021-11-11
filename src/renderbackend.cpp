@@ -19,4 +19,9 @@ OverlayWindow *RenderBackend::overlayWindow() const
     return nullptr;
 }
 
+QList<QByteArray> RenderBackend::openGLPlatformInterfaceExtensions() const
+{
+    return QList<QByteArray>{};
+}
+
 } // namespace KWin

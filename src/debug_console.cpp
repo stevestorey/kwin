@@ -13,7 +13,7 @@
 #include "internal_client.h"
 #include "keyboard_input.h"
 #include "main.h"
-#include "scene.h"
+#include "renderbackend.h"
 #include "subsurfacemonitor.h"
 #include "unmanaged.h"
 #include "wayland_server.h"
@@ -676,7 +676,7 @@ void DebugConsole::initGLTab()
         return text;
     };
 
-    m_ui->platformExtensionsLabel->setText(extensionsString(Compositor::self()->scene()->openGLPlatformInterfaceExtensions()));
+    m_ui->platformExtensionsLabel->setText(extensionsString(Compositor::self()->backend()->openGLPlatformInterfaceExtensions()));
     m_ui->openGLExtensionsLabel->setText(extensionsString(openGLExtensions()));
 }
 

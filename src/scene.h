@@ -165,15 +165,6 @@ public:
      */
     virtual QImage *qpainterRenderBuffer(AbstractOutput *output) const;
 
-    /**
-     * The backend specific extensions (e.g. EGL/GLX extensions).
-     *
-     * Not the OpenGL (ES) extension!
-     *
-     * Default implementation returns empty list
-     */
-    virtual QVector<QByteArray> openGLPlatformInterfaceExtensions() const;
-
     virtual QSharedPointer<GLTexture> textureForOutput(AbstractOutput *output) const {
         Q_UNUSED(output);
         return {};

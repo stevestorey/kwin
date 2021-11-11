@@ -18,7 +18,7 @@
 #include "main.h"
 #include "pipewirecore.h"
 #include "platform.h"
-#include "scene.h"
+#include "renderbackend.h"
 #include "utils.h"
 
 #include <KLocalizedString>
@@ -240,7 +240,7 @@ bool PipeWireStream::init()
         return false;
     }
 
-    m_useNativeFence = Compositor::self()->scene()->openGLPlatformInterfaceExtensions().contains(QByteArrayLiteral("EGL_ANDROID_native_fence_sync"));
+    m_useNativeFence = Compositor::self()->backend()->openGLPlatformInterfaceExtensions().contains(QByteArrayLiteral("EGL_ANDROID_native_fence_sync"));
     return true;
 }
 

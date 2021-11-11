@@ -49,7 +49,6 @@ public:
         return m_backend;
     }
 
-    QVector<QByteArray> openGLPlatformInterfaceExtensions() const override;
     QSharedPointer<GLTexture> textureForOutput(AbstractOutput *output) const override;
 
     QMatrix4x4 projectionMatrix() const { return m_projectionMatrix; }

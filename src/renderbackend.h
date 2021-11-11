@@ -27,6 +27,15 @@ public:
 
     virtual CompositingType compositingType() const = 0;
     virtual OverlayWindow *overlayWindow() const;
+
+    /**
+     * The backend specific extensions (e.g. EGL/GLX extensions).
+     *
+     * Not the OpenGL (ES) extension!
+     *
+     * Default implementation returns empty list
+     */
+    virtual QList<QByteArray> openGLPlatformInterfaceExtensions() const;
 };
 
 } // namespace KWin

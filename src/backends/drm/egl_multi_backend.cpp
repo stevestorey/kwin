@@ -48,7 +48,7 @@ void EglMultiBackend::init()
     setSupportsPartialUpdate(m_backends[0]->supportsPartialUpdate());
     setSupportsSwapBuffersWithDamage(m_backends[0]->supportsSwapBuffersWithDamage());
     // these are client extensions and the same for all egl backends
-    setExtensions(m_backends[0]->extensions());
+    setExtensions(m_backends[0]->openGLPlatformInterfaceExtensions());
 
     m_backends[0]->makeCurrent();
     m_initialized = true;

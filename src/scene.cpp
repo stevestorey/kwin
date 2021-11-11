@@ -600,11 +600,6 @@ QImage *Scene::qpainterRenderBuffer(AbstractOutput *output) const
     return nullptr;
 }
 
-QVector<QByteArray> Scene::openGLPlatformInterfaceExtensions() const
-{
-    return QVector<QByteArray>{};
-}
-
 SurfaceTexture *Scene::createSurfaceTextureInternal(SurfacePixmapInternal *pixmap)
 {
     Q_UNUSED(pixmap)
