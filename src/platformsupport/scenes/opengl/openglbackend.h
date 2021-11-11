@@ -106,10 +106,6 @@ public:
         return m_haveSwapBuffersWithDamage;
     }
 
-    bool supportsNativeFence() const
-    {
-        return m_haveNativeFence;
-    }
     virtual bool directScanoutAllowed(AbstractOutput *output) const;
 
     /**
@@ -172,11 +168,6 @@ protected:
         m_haveSwapBuffersWithDamage = value;
     }
 
-    void setSupportsNativeFence(bool value)
-    {
-        m_haveNativeFence = value;
-    }
-
     /**
      * Sets the platform-specific @p extensions.
      *
@@ -200,10 +191,6 @@ private:
      */
     bool m_havePartialUpdate = false;
     bool m_haveSwapBuffersWithDamage = false;
-    /**
-     * @brief Whether the backend supports EGL_ANDROID_native_fence_sync.
-     */
-    bool m_haveNativeFence = false;
     /**
      * @brief Whether the initialization failed, of course default to @c false.
      */

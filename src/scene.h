@@ -140,7 +140,6 @@ public:
 
     virtual bool makeOpenGLContextCurrent();
     virtual void doneOpenGLContextCurrent();
-    virtual bool supportsNativeFence() const;
 
     virtual QMatrix4x4 screenProjectionMatrix() const;
 

@@ -39,7 +39,6 @@ public:
     Shadow *createShadow(Toplevel *toplevel) override;
     bool makeOpenGLContextCurrent() override;
     void doneOpenGLContextCurrent() override;
-    bool supportsNativeFence() const override;
     DecorationRenderer *createDecorationRenderer(Decoration::DecoratedClientImpl *impl) override;
     bool animationsSupported() const override;
     SurfaceTexture *createSurfaceTextureInternal(SurfacePixmapInternal *pixmap) override;

@@ -461,11 +461,6 @@ void SceneOpenGL::doneOpenGLContextCurrent()
     m_backend->doneCurrent();
 }
 
-bool SceneOpenGL::supportsNativeFence() const
-{
-    return m_backend->supportsNativeFence();
-}
-
 Scene::EffectFrame *SceneOpenGL::createEffectFrame(EffectFrameImpl *frame)
 {
     return new SceneOpenGL::EffectFrame(frame, this);

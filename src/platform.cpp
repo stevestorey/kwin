@@ -515,14 +515,6 @@ void Platform::warpPointer(const QPointF &globalPos)
     Q_UNUSED(globalPos)
 }
 
-bool Platform::supportsNativeFence() const
-{
-    if (Compositor *compositor = Compositor::self()) {
-        return compositor->scene()->supportsNativeFence();
-    }
-    return false;
-}
-
 EGLDisplay KWin::Platform::sceneEglDisplay() const
 {
     return m_eglDisplay;

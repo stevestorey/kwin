@@ -584,11 +584,6 @@ void Scene::doneOpenGLContextCurrent()
 {
 }
 
-bool Scene::supportsNativeFence() const
-{
-    return false;
-}
-
 QMatrix4x4 Scene::screenProjectionMatrix() const
 {
     return QMatrix4x4();

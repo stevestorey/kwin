@@ -101,6 +101,7 @@ private:
         QScopedPointer<GLTexture> lastFrameTexture;
     } m_cursor;
     bool m_repainting = false;
+    bool m_useNativeFence = false;
     QRect cursorGeometry(Cursor *cursor) const;
 
     QHash<struct pw_buffer *, QSharedPointer<DmaBufTexture>> m_dmabufDataForPwBuffer;

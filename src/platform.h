@@ -83,10 +83,6 @@ public:
     virtual void createPlatformCursor(QObject *parent = nullptr);
     virtual void warpPointer(const QPointF &globalPos);
     /**
-     * Whether our Compositing EGL display supports creating native EGL fences.
-     */
-    bool supportsNativeFence() const;
-    /**
      * The EGLDisplay used by the compositing scene.
      */
     EGLDisplay sceneEglDisplay() const;

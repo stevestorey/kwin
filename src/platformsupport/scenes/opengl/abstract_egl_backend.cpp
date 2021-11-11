@@ -152,7 +152,6 @@ bool AbstractEglBackend::initEglAPI()
         }
     }
 
-    setSupportsNativeFence(hasExtension(QByteArrayLiteral("EGL_ANDROID_native_fence_sync")));
     return true;
 }
 

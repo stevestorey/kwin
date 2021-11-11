@@ -7,6 +7,7 @@
 */
 
 #include "pipewirestream.h"
+#include "composite.h"
 #include "cursor.h"
 #include "dmabuftexture.h"
 #include "eglnativefence.h"
@@ -17,6 +18,7 @@
 #include "main.h"
 #include "pipewirecore.h"
 #include "platform.h"
+#include "scene.h"
 #include "utils.h"
 
 #include <KLocalizedString>
@@ -238,6 +240,7 @@ bool PipeWireStream::init()
         return false;
     }
 
+    m_useNativeFence = Compositor::self()->scene()->openGLPlatformInterfaceExtensions().contains(QByteArrayLiteral("EGL_ANDROID_native_fence_sync"));
     return true;
 }
 
@@ -524,7 +527,7 @@ void PipeWireStream::tryEnqueue(pw_buffer *buffer)
     // we need to insert a fence into the command stream and enqueue the pipewire buffer
     // only after the fence is signaled; otherwise stream consumers will most likely see
     // a corrupted buffer.
-    if (kwinApp()->platform()->supportsNativeFence()) {
+    if (m_useNativeFence) {
         Q_ASSERT_X(eglGetCurrentContext(), "tryEnqueue", "no current context");
         m_pendingFence = new EGLNativeFence(kwinApp()->platform()->sceneEglDisplay());
         if (!m_pendingFence->isValid()) {
