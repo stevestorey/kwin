@@ -153,6 +153,59 @@ void Scene::removeRepaints(AbstractOutput *output)
     m_repaints.remove(output);
 }
 
+bool Scene::beginPaint(AbstractOutput *output, const QList<Toplevel *> &windows)
+{
+    createStackingOrder(windows);
+    painted_screen = output;
+    return true;
+}
+
+void Scene::endPaint()
+{
+    clearStackingOrder();
+}
+
+static SurfaceItem *findTopMostSurface(SurfaceItem *item)
+{
+    const QList<Item *> children = item->childItems();
+    if (children.isEmpty()) {
+        return item;
+    } else {
+        return findTopMostSurface(static_cast<SurfaceItem *>(children.constLast()));
+    }
+}
+
+SurfaceItem *Scene::scanoutCandidate() const
+{
+    for (auto it = stacking_order.crbegin(); it != stacking_order.crend(); ++it) {
+        AbstractClient *c = qobject_cast<AbstractClient *>((*it)->window());
+        if (!c) {
+            break;
+        }
+
+        if (c->isOnOutput(painted_screen) && c->isOnCurrentDesktop() && c->isOnCurrentActivity() && c->isShown(true) && c->opacity() > 0) {
+            if (!c->surfaceItem() || !c->isFullScreen()) {
+                break;
+            }
+            SurfaceItem *topMost = findTopMostSurface(c->surfaceItem());
+            auto pixmap = topMost->pixmap();
+            if (!pixmap) {
+                break;
+            }
+            pixmap->update();
+            // the subsurface has to be able to cover the whole window
+            if (topMost->position() != QPoint(0, 0)) {
+                break;
+            }
+            // and it has to be completely opaque
+            if (pixmap->hasAlphaChannel() && !topMost->opaque().contains(QRect(0, 0, c->width(), c->height()))) {
+                break;
+            }
+            return topMost;
+        }
+    }
+    return nullptr;
+}
 
 QMatrix4x4 Scene::createProjectionMatrix(const QRect &rect)
 {

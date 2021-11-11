@@ -13,7 +13,9 @@
 namespace KWin
 {
 
+class AbstractOutput;
 class OverlayWindow;
+class SurfaceItem;
 
 /**
  * The RenderBackend class is the base class for all rendering backends.
@@ -27,6 +29,13 @@ public:
 
     virtual CompositingType compositingType() const = 0;
     virtual OverlayWindow *overlayWindow() const;
+
+    virtual bool directScanoutAllowed(AbstractOutput *output) const;
+    /**
+     * Tries to directly scan out a surface to the screen)
+     * @return if the scanout fails (or is not supported on the specified screen)
+     */
+    virtual bool scanout(AbstractOutput *output, SurfaceItem *surfaceItem);
 };
 
 } // namespace KWin

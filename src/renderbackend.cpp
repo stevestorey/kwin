@@ -19,4 +19,17 @@ OverlayWindow *RenderBackend::overlayWindow() const
     return nullptr;
 }
 
+bool RenderBackend::directScanoutAllowed(AbstractOutput *output) const
+{
+    Q_UNUSED(output);
+    return false;
+}
+
+bool RenderBackend::scanout(AbstractOutput *output, SurfaceItem *surfaceItem)
+{
+    Q_UNUSED(output)
+    Q_UNUSED(surfaceItem)
+    return false;
+}
+
 } // namespace KWin

@@ -225,124 +225,72 @@ void SceneOpenGL::aboutToStartPainting(AbstractOutput *output, const QRegion &da
     m_backend->aboutToStartPainting(output, damage);
 }
 
-static SurfaceItem *findTopMostSurface(SurfaceItem *item)
-{
-    const QList<Item *> children = item->childItems();
-    if (children.isEmpty()) {
-        return item;
-    } else {
-        return findTopMostSurface(static_cast<SurfaceItem *>(children.constLast()));
-    }
-}
-
-void SceneOpenGL::paint(AbstractOutput *output, const QRegion &damage, const QList<Toplevel *> &toplevels,
-                        RenderLoop *renderLoop)
+bool SceneOpenGL::beginPaint(AbstractOutput *output, const QList<Toplevel *> &windows)
 {
     if (m_resetOccurred) {
-        return; // A graphics reset has occurred, do nothing.
-    }
-
-    painted_screen = output;
-    // actually paint the frame, flushed with the NEXT frame
-    createStackingOrder(toplevels);
-
-    QRegion update;
-    QRegion valid;
-    QRegion repaint;
-    QRect geo;
-    qreal scaling;
-    if (output) {
-        geo = output->geometry();
-        scaling = output->scale();
-    } else {
-        geo = screens()->geometry();
-        scaling = 1;
+        return false;
     }
 
     const GLenum status = glGetGraphicsResetStatus();
     if (status != GL_NO_ERROR) {
         handleGraphicsReset(status);
+        return false;
+    }
+
+    return Scene::beginPaint(output, windows);
+}
+
+void SceneOpenGL::paint(const QRegion &damage, RenderLoop *renderLoop)
+{
+    QRegion update;
+    QRegion valid;
+    QRegion repaint;
+    QRect geo;
+    qreal scaling;
+    if (painted_screen) {
+        geo = painted_screen->geometry();
+        scaling = painted_screen->scale();
     } else {
-        renderLoop->beginFrame();
+        geo = screens()->geometry();
+        scaling = 1;
+    }
 
-        SurfaceItem *fullscreenSurface = nullptr;
-        for (int i = stacking_order.count() - 1; i >=0; i--) {
-            Window *window = stacking_order[i];
-            Toplevel *toplevel = window->window();
-            if (output && toplevel->isOnOutput(output) && window->isVisible() && toplevel->opacity() > 0) {
-                AbstractClient *c = dynamic_cast<AbstractClient*>(toplevel);
-                if (!c || !c->isFullScreen()) {
-                    break;
-                }
-                if (!window->surfaceItem()) {
-                    break;
-                }
-                SurfaceItem *topMost = findTopMostSurface(window->surfaceItem());
-                auto pixmap = topMost->pixmap();
-                if (!pixmap) {
-                    break;
-                }
-                pixmap->update();
-                // the subsurface has to be able to cover the whole window
-                if (topMost->position() != QPoint(0, 0)) {
-                    break;
-                }
-                // and it has to be completely opaque
-                if (!window->isOpaque() && !topMost->opaque().contains(QRect(0, 0, window->width(), window->height()))) {
-                    break;
-                }
-                fullscreenSurface = topMost;
-                break;
-            }
-        }
-        renderLoop->setFullscreenSurface(fullscreenSurface);
+    renderLoop->beginFrame();
 
-        bool directScanout = false;
-        if (m_backend->directScanoutAllowed(output) && !static_cast<EffectsHandlerImpl*>(effects)->blocksDirectScanout()) {
-            directScanout = m_backend->scanout(output, fullscreenSurface);
-        }
-        if (directScanout) {
-            renderLoop->endFrame();
-        } else {
-            // prepare rendering makescontext current on the output
-            repaint = m_backend->beginFrame(output);
+    // prepare rendering makescontext current on the output
+    repaint = m_backend->beginFrame(painted_screen);
 
-            GLVertexBuffer::setVirtualScreenGeometry(geo);
-            GLRenderTarget::setVirtualScreenGeometry(geo);
-            GLVertexBuffer::setVirtualScreenScale(scaling);
-            GLRenderTarget::setVirtualScreenScale(scaling);
+    GLVertexBuffer::setVirtualScreenGeometry(geo);
+    GLRenderTarget::setVirtualScreenGeometry(geo);
+    GLVertexBuffer::setVirtualScreenScale(scaling);
+    GLRenderTarget::setVirtualScreenScale(scaling);
 
-            updateProjectionMatrix(geo);
+    updateProjectionMatrix(geo);
 
-            paintScreen(damage.intersected(geo), repaint, &update, &valid,
-                        renderLoop, projectionMatrix());   // call generic implementation
-            paintCursor(valid);
+    paintScreen(damage.intersected(geo), repaint, &update, &valid,
+                renderLoop, projectionMatrix());   // call generic implementation
+    paintCursor(valid);
 
-            if (!GLPlatform::instance()->isGLES() && !output) {
-                const QSize &screenSize = screens()->size();
-                const QRegion displayRegion(0, 0, screenSize.width(), screenSize.height());
+    if (!GLPlatform::instance()->isGLES() && !painted_screen) {
+        const QSize &screenSize = screens()->size();
+        const QRegion displayRegion(0, 0, screenSize.width(), screenSize.height());
 
-                // copy dirty parts from front to backbuffer
-                if (!m_backend->supportsBufferAge() &&
-                    options->glPreferBufferSwap() == Options::CopyFrontBuffer &&
-                    valid != displayRegion) {
-                    glReadBuffer(GL_FRONT);
-                    m_backend->copyPixels(displayRegion - valid);
-                    glReadBuffer(GL_BACK);
-                    valid = displayRegion;
-                }
-            }
-
-            renderLoop->endFrame();
-
-            GLVertexBuffer::streamingBuffer()->endOfFrame();
-            m_backend->endFrame(output, valid, update);
-            GLVertexBuffer::streamingBuffer()->framePosted();
+        // copy dirty parts from front to backbuffer
+        if (!m_backend->supportsBufferAge() &&
+            options->glPreferBufferSwap() == Options::CopyFrontBuffer &&
+            valid != displayRegion) {
+            glReadBuffer(GL_FRONT);
+            m_backend->copyPixels(displayRegion - valid);
+            glReadBuffer(GL_BACK);
+            valid = displayRegion;
         }
     }
 
-    // do cleanup
-    clearStackingOrder();
+    renderLoop->endFrame();
+
+    GLVertexBuffer::streamingBuffer()->endOfFrame();
+    m_backend->endFrame(painted_screen, valid, update);
+    GLVertexBuffer::streamingBuffer()->framePosted();
 }
 
 QMatrix4x4 SceneOpenGL::transformation(int mask, const ScreenPaintData &data) const

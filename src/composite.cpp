@@ -624,11 +624,30 @@ void Compositor::composite(RenderLoop *renderLoop)
     fTraceDuration("Paint (", output ? output->name() : QStringLiteral("screens"), ")");
 
     const auto windows = windowsToRender();
+    if (!m_scene->beginPaint(output, windows)) {
+        return;
+    }
 
     const QRegion repaints = m_scene->repaints(output);
     m_scene->resetRepaints(output);
 
-    m_scene->paint(output, repaints, windows, renderLoop);
+    SurfaceItem *scanoutCandidate = nullptr;
+    if (output) {
+        scanoutCandidate = m_scene->scanoutCandidate();
+    }
+
+    renderLoop->setFullscreenSurface(scanoutCandidate);
+
+    bool directScanout = false;
+    if (m_backend->directScanoutAllowed(output) && !static_cast<EffectsHandlerImpl *>(effects)->blocksDirectScanout()) {
+        directScanout = m_backend->scanout(output, scanoutCandidate);
+    }
+
+    if (!directScanout) {
+        m_scene->paint(repaints, renderLoop);
+    }
+
+    m_scene->endPaint();
 
     if (waylandServer()) {
         const std::chrono::milliseconds frameTime =

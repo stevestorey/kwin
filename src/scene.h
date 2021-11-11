@@ -71,12 +71,16 @@ public:
     // Returns true if the ctor failed to properly initialize.
     virtual bool initFailed() const = 0;
 
+    virtual bool beginPaint(AbstractOutput *output, const QList<Toplevel *> &windows);
+    void endPaint();
+
+    SurfaceItem *scanoutCandidate() const;
+
     // Repaints the given screen areas, windows provides the stacking order.
     // The entry point for the main part of the painting pass.
     // returns the time since the last vblank signal - if there's one
     // ie. "what of this frame is lost to painting"
-    virtual void paint(AbstractOutput *output, const QRegion &damage, const QList<Toplevel *> &windows,
-                       RenderLoop *renderLoop) = 0;
+    virtual void paint(const QRegion &damage, RenderLoop *renderLoop) = 0;
 
 
     void paintScreen(AbstractOutput *output, const QList<Toplevel *> &toplevels);
