@@ -25,6 +25,8 @@ Item {
     property QtObject selectedDesktop: null
 
     implicitHeight: columnHeight + 2 * PlasmaCore.Units.smallSpacing
+    LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
+    LayoutMirroring.childrenInherit: true
 
     Flickable {
         anchors.fill: parent
@@ -146,7 +148,6 @@ Item {
                         }
 
                         Loader {
-                            LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
                             active: (hoverHandler.hovered || Kirigami.Settings.tabletMode || Kirigami.Settings.hasTransientTouchInput) && desktopRepeater.count > 1
                             anchors.right: parent.right
                             anchors.top: parent.top
