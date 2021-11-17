@@ -111,7 +111,6 @@ void SlidingPopupsEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &da
 
     (*animationIt).timeLine.update(delta);
     data.setTransformed();
-    // w->enablePainting(EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE);
 
     effects->prePaintWindow(w, data, presentTime);
 }
@@ -182,6 +181,7 @@ void SlidingPopupsEffect::postPaintWindow(EffectWindow *w)
                 w->setData(WindowForceBlurRole, QVariant());
             }
             m_animations.erase(animationIt);
+            w->enablePainting(this, EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE, false);
         }
         effects->addRepaint(w->expandedGeometry());
     }
@@ -481,6 +481,7 @@ void SlidingPopupsEffect::slideIn(EffectWindow *w)
     w->setData(WindowForceBlurRole, QVariant(true));
 
     w->addRepaintFull();
+    w->enablePainting(this, EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE);
 }
 
 void SlidingPopupsEffect::slideOut(EffectWindow *w)
@@ -521,6 +522,7 @@ void SlidingPopupsEffect::slideOut(EffectWindow *w)
     w->setData(WindowForceBlurRole, QVariant(true));
 
     w->addRepaintFull();
+    w->enablePainting(this, EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE);
 }
 
 void SlidingPopupsEffect::stopAnimations()
@@ -534,6 +536,7 @@ void SlidingPopupsEffect::stopAnimations()
             w->setData(WindowForceBackgroundContrastRole, QVariant());
             w->setData(WindowForceBlurRole, QVariant());
         }
+        w->enablePainting(this, EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE, false);
     }
 
     m_animations.clear();
