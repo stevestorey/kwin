@@ -56,7 +56,6 @@ void FallApartEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data, 
 
             animationIt->progress += time / animationTime(1000.);
             data.setTransformed();
-            // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
         } else {
             unredirect(w);
             windows.remove(w);
@@ -164,6 +163,7 @@ void FallApartEffect::slotWindowClosed(EffectWindow* c)
         return;
     c->setData(WindowClosedGrabRole, QVariant::fromValue(static_cast<void*>(this)));
     windows[ c ].progress = 0;
+    c->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE);
     c->refWindow();
     redirect(c);
 }
@@ -190,6 +190,7 @@ void FallApartEffect::slotWindowDataChanged(EffectWindow* w, int role)
 
     unredirect(it.key());
     it.key()->unrefWindow();
+    it.key()->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE, false);
     windows.erase(it);
 }
 
