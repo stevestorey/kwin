@@ -67,7 +67,6 @@ void SheetEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std:
 {
     if (m_animations.contains(w)) {
         data.setTransformed();
-        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
     }
 
     effects->prePaintWindow(w, data, presentTime);
@@ -122,6 +121,7 @@ void SheetEffect::postPaintWindow(EffectWindow *w)
                 w->unrefWindow();
             }
             animationIt = m_animations.erase(animationIt);
+            w->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE, false);
         } else {
             ++animationIt;
         }
@@ -186,6 +186,7 @@ void SheetEffect::slotWindowClosed(EffectWindow *w)
         return;
     }
 
+    w->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE);
     w->refWindow();
 
     Animation &animation = m_animations[w];
