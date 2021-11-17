@@ -1508,8 +1508,6 @@ void X11Client::doSetShade(ShadeMode previousShadeMode)
 {
     // TODO: All this unmapping, resizing etc. feels too much duplicated from elsewhere
     if (isShade()) {
-        // shade_mode == ShadeNormal
-        addWorkspaceRepaint(visibleGeometry());
         // Shade
         shade_geometry_change = true;
         QSize s(implicitSize());
@@ -1654,7 +1652,6 @@ void X11Client::internalHide()
         unmap();
     if (old == Kept)
         updateHiddenPreview();
-    addWorkspaceRepaint(visibleGeometry());
     workspace()->clientHidden(this);
     Q_EMIT windowHidden(this);
 }

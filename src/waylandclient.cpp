@@ -262,7 +262,6 @@ void WaylandClient::showClient()
         return;
     }
     m_isHidden = false;
-    addRepaintFull();
     Q_EMIT windowShown(this);
 }
 
@@ -275,7 +274,6 @@ void WaylandClient::hideClient()
         leaveInteractiveMoveResize();
     }
     m_isHidden = true;
-    addWorkspaceRepaint(visibleGeometry());
     workspace()->clientHidden(this);
     Q_EMIT windowHidden(this);
 }

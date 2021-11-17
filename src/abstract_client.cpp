@@ -729,7 +729,6 @@ void AbstractClient::minimize(bool avoid_animation)
     }
 
     // TODO: merge signal with s_minimized
-    addWorkspaceRepaint(visibleGeometry());
     Q_EMIT clientMinimized(this, !avoid_animation);
     Q_EMIT minimizedChanged();
 }
