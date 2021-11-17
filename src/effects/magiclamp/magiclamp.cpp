@@ -70,7 +70,6 @@ void MagicLampEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data, 
     if (m_animations.contains(w)) {
         // We'll transform this window
         data.setTransformed();
-        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
     }
 
     effects->prePaintWindow(w, data, presentTime);
@@ -296,6 +295,7 @@ void MagicLampEffect::postPaintScreen()
     while (animationIt != m_animations.end()) {
         if ((*animationIt).timeLine.done()) {
             unredirect(animationIt.key());
+            animationIt.key()->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_MINIMIZE, false);
             animationIt = m_animations.erase(animationIt);
         } else {
             ++animationIt;
@@ -319,6 +319,7 @@ void MagicLampEffect::slotWindowMinimized(EffectWindow* w)
         return;
 
     MagicLampAnimation &animation = m_animations[w];
+    w->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
 
     if (animation.timeLine.running()) {
         animation.timeLine.toggleDirection();
