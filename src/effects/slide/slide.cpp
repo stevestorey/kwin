@@ -253,9 +253,9 @@ void SlideEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std:
 {
     const bool painted = isPainted(w);
     if (painted) {
-        w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
     } else {
-        w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+        // w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
     }
     if (painted && isTranslated(w)) {
         data.setTransformed();

@@ -111,7 +111,7 @@ void SlidingPopupsEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &da
 
     (*animationIt).timeLine.update(delta);
     data.setTransformed();
-    w->enablePainting(EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE);
+    // w->enablePainting(EffectWindow::PAINT_DISABLED | EffectWindow::PAINT_DISABLED_BY_DELETE);
 
     effects->prePaintWindow(w, data, presentTime);
 }

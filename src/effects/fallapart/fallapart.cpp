@@ -56,7 +56,7 @@ void FallApartEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data, 
 
             animationIt->progress += time / animationTime(1000.);
             data.setTransformed();
-            w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
+            // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
         } else {
             unredirect(w);
             windows.remove(w);

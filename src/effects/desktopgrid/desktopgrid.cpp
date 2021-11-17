@@ -341,15 +341,16 @@ void DesktopGridEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data
 {
     if (timeline.currentValue() != 0 || (isUsingPresentWindows() && isMotionManagerMovingWindows())) {
         if (w->isOnDesktop(paintingDesktop)) {
-            w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
-            if (w->isMinimized() && isUsingPresentWindows())
-                w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
+            // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+            // if (w->isMinimized() && isUsingPresentWindows())
+            //     w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
             data.mask |= PAINT_WINDOW_TRANSFORMED;
 
-            if (windowMove && wasWindowMove && windowMove->findModal() == w)
-                w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
-        } else
-            w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+            // if (windowMove && wasWindowMove && windowMove->findModal() == w)
+            //     w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+        } else {
+            // w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+        }
     }
     effects->prePaintWindow(w, data, presentTime);
 }

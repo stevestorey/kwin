@@ -318,8 +318,8 @@ void PresentWindowsEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &d
             effects->prePaintWindow(w, data, presentTime);
             return;
         }
-        w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);   // Display always
-        w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);   // Display always
+        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
 
         // The animation code assumes that the time diff cannot be 0, let's work around it.
         int time;
@@ -343,8 +343,8 @@ void PresentWindowsEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &d
 
         if (winData->opacity <= 0.0) {
             // don't disable painting for panels if show panel is set
-            if (!(m_showPanel && w->isDock()))
-                w->disablePainting(EffectWindow::PAINT_DISABLED);
+            // if (!(m_showPanel && w->isDock()))
+                // w->disablePainting(EffectWindow::PAINT_DISABLED);
         } else if (winData->opacity != 1.0)
             data.setTranslucent();
 
@@ -365,13 +365,14 @@ void PresentWindowsEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &d
                 // we have to keep the window in the list to prevent flickering
                 winData->referenced = false;
                 w->unrefWindow();
-            } else
-                w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
+            } else {
+                // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
+            }
         }
 
         // desktop windows on other desktops (Plasma activity per desktop) should not be painted
         if (w->isDesktop() && !w->isOnCurrentDesktop())
-            w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
+            // w->disablePainting(EffectWindow::PAINT_DISABLED_BY_DESKTOP);
 
         if (isInMotion)
             data.setTransformed(); // We will be moving this window

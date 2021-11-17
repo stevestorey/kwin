@@ -90,7 +90,7 @@ void GlideEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std:
 {
     if (m_animations.contains(w)) {
         data.setTransformed();
-        w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
+        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
     }
 
     effects->prePaintWindow(w, data, presentTime);

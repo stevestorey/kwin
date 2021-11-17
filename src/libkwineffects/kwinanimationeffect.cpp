@@ -475,12 +475,12 @@ void AnimationEffect::prePaintWindow( EffectWindow* w, WindowPrePaintData& data,
             paintDeleted |= anim->keepAlive;
         }
         if ( isUsed ) {
-            if ( w->isMinimized() )
-                w->enablePainting( EffectWindow::PAINT_DISABLED_BY_MINIMIZE );
-            else if ( w->isDeleted() && paintDeleted )
-                w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DELETE );
-            else if ( !w->isOnCurrentDesktop() )
-                w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DESKTOP );
+            // if ( w->isMinimized() )
+            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_MINIMIZE );
+            // else if ( w->isDeleted() && paintDeleted )
+            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DELETE );
+            // else if ( !w->isOnCurrentDesktop() )
+            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DESKTOP );
 //            if( !w->isPaintingEnabled() && !effects->activeFullScreenEffect() )
 //                effects->addLayerRepaint(w->expandedGeometry());
         }

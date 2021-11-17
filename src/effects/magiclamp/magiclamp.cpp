@@ -70,7 +70,7 @@ void MagicLampEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data, 
     if (m_animations.contains(w)) {
         // We'll transform this window
         data.setTransformed();
-        w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
+        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_MINIMIZE);
     }
 
     effects->prePaintWindow(w, data, presentTime);
