@@ -1804,11 +1804,6 @@ EffectWindowImpl::~EffectWindowImpl()
     }
 }
 
-bool EffectWindowImpl::isPaintingEnabled()
-{
-    return sceneWindow()->isPaintingEnabled();
-}
-
 void EffectWindowImpl::enablePainting(int reason)
 {
     sceneWindow()->enablePainting(reason);

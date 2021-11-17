@@ -37,7 +37,6 @@ public:
     EffectWindow *findModal() override;
     EffectWindow *transientFor() override;
     const EffectWindowGroup *group() const override;
-    bool isPaintingEnabled() override;
     EffectWindowList mainWindows() const override;
     QByteArray readProperty(long int atom, long int type, int format) const override;
     void refWindow() override;
@@ -337,11 +336,6 @@ EffectWindow *MockEffectWindow::transientFor()
 const EffectWindowGroup *MockEffectWindow::group() const
 {
     return nullptr;
-}
-
-bool MockEffectWindow::isPaintingEnabled()
-{
-    return true;
 }
 
 EffectWindowList MockEffectWindow::mainWindows() const

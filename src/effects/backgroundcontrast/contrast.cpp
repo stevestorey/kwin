@@ -357,9 +357,6 @@ void ContrastEffect::prePaintWindow(EffectWindow* w, WindowPrePaintData& data, s
 
     effects->prePaintWindow(w, data, presentTime);
 
-    if (!w->isPaintingEnabled()) {
-        return;
-    }
     if (!shader || !shader->isValid()) {
         return;
     }

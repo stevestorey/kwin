@@ -2210,7 +2210,6 @@ public:
 
     virtual void enablePainting(int reason) = 0;
     virtual void disablePainting(int reason) = 0;
-    virtual bool isPaintingEnabled() = 0;
     Q_SCRIPTABLE virtual void addRepaint(const QRect &r) = 0;
     Q_SCRIPTABLE virtual void addRepaint(int x, int y, int w, int h) = 0;
     Q_SCRIPTABLE virtual void addRepaintFull() = 0;

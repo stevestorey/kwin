@@ -386,7 +386,6 @@ public:
 
     void enablePainting(int reason) override;
     void disablePainting(int reason) override;
-    bool isPaintingEnabled() override;
 
     void addRepaint(const QRect &r) override;
     void addRepaint(int x, int y, int w, int h) override;
