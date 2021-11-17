@@ -9,6 +9,7 @@
 #include "decorationitem.h"
 #include "deleted.h"
 #include "internal_client.h"
+#include "scene.h"
 #include "shadowitem.h"
 #include "surfaceitem_internal.h"
 #include "surfaceitem_wayland.h"
@@ -24,12 +25,22 @@ WindowItem::WindowItem(Toplevel *window, Item *parent)
     AbstractClient *client = qobject_cast<AbstractClient *>(window);
     if (client) {
         connect(client, &AbstractClient::decorationChanged, this, &WindowItem::updateDecorationItem);
+        // TODO: Activity presence changed.
+        connect(client, &AbstractClient::desktopPresenceChanged,
+                this, &WindowItem::updatePaintingDisabled, Qt::QueuedConnection);
+        connect(client, &AbstractClient::minimizedChanged,
+                this, &WindowItem::updatePaintingDisabled, Qt::QueuedConnection);
+        connect(client, &AbstractClient::windowShown,
+                this, &WindowItem::updatePaintingDisabled, Qt::QueuedConnection);
+        connect(client, &AbstractClient::windowHidden,
+                this, &WindowItem::updatePaintingDisabled, Qt::QueuedConnection);
         updateDecorationItem();
     }
     connect(window, &Toplevel::shadowChanged, this, &WindowItem::updateShadowItem);
     updateShadowItem();
 
     connect(window, &Toplevel::windowClosed, this, &WindowItem::handleWindowClosed);
+    connect(window, &Toplevel::windowClosed, this, &WindowItem::updatePaintingDisabled, Qt::QueuedConnection);
 }
 
 SurfaceItem *WindowItem::surfaceItem() const
@@ -122,6 +133,29 @@ void WindowItem::updateDecorationItem()
     } else {
         m_decorationItem.reset();
     }
+}
+
+void WindowItem::updatePaintingDisabled()
+{
+    int effectiveDisabled = 0;
+    if (m_window->isDeleted()) {
+        effectiveDisabled |= Scene::Window::PAINT_DISABLED_BY_DELETE;
+    }
+    if (!m_window->isOnCurrentDesktop()) {
+        effectiveDisabled |= Scene::Window::PAINT_DISABLED_BY_DESKTOP;
+    }
+    if (!m_window->isOnCurrentActivity()) {
+        effectiveDisabled |= Scene::Window::PAINT_DISABLED_BY_ACTIVITY;
+    }
+    if (AbstractClient *client = qobject_cast<AbstractClient *>(m_window)) {
+        if (client->isMinimized()) {
+            effectiveDisabled |= Scene::Window::PAINT_DISABLED_BY_MINIMIZE;
+        }
+        if (client->isHiddenInternal()) {
+            effectiveDisabled |= Scene::Window::PAINT_DISABLED;
+        }
+    }
+    setVisible(!effectiveDisabled);
 }
 
 WindowItemX11::WindowItemX11(Toplevel *window, Item *parent)

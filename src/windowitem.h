@@ -51,10 +51,14 @@ private Q_SLOTS:
     void updateSurfaceVisibility();
 
 private:
+    void updatePaintingDisabled();
+
     Toplevel *m_window;
     QScopedPointer<SurfaceItem> m_surfaceItem;
     QScopedPointer<DecorationItem> m_decorationItem;
     QScopedPointer<ShadowItem> m_shadowItem;
+
+    friend class EffectWindowImpl; // to access updatePaintingDisabled()
 };
 
 /**
