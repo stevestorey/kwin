@@ -18,13 +18,12 @@
 #include <QQmlComponent>
 #include <QQuickItem>
 #include <QTimer>
-#include <QWindow>
 
 namespace KWin
 {
 
-OverviewScreenView::OverviewScreenView(QQmlComponent *component, EffectScreen *screen, QWindow *renderWindow, OverviewEffect *effect)
-    : OffscreenQuickView(effect, renderWindow)
+OverviewScreenView::OverviewScreenView(QQmlComponent *component, OverviewEffect *effect, EffectScreen *screen)
+    : QuickSceneView(effect, screen)
 {
     const QVariantMap initialProperties {
         { QStringLiteral("effect"), QVariant::fromValue(effect) },
@@ -52,27 +51,6 @@ OverviewScreenView::~OverviewScreenView()
     m_rootItem = nullptr;
 }
 
-bool OverviewScreenView::isDirty() const
-{
-    return m_dirty;
-}
-
-void OverviewScreenView::markDirty()
-{
-    m_dirty = true;
-}
-
-void OverviewScreenView::resetDirty()
-{
-    m_dirty = false;
-}
-
-void OverviewScreenView::scheduleRepaint()
-{
-    markDirty();
-    effects->addRepaint(geometry());
-}
-
 void OverviewScreenView::stop()
 {
     QMetaObject::invokeMethod(m_rootItem, "stop");
@@ -98,11 +76,7 @@ OverviewEffect::OverviewEffect()
     m_toggleShortcut = KGlobalAccel::self()->shortcut(m_toggleAction);
     effects->registerGlobalShortcut({defaultToggleShortcut}, m_toggleAction);
 
-    connect(effects, &EffectsHandler::screenAboutToLock, this, [this]() {
-        if (m_activated) {
-            realDeactivate();
-        }
-    });
+    connect(effects, &EffectsHandler::screenAboutToLock, this, &OverviewEffect::realDeactivate);
 
     initConfig<OverviewConfig>();
     reconfigure(ReconfigureAll);
@@ -112,9 +86,9 @@ OverviewEffect::~OverviewEffect()
 {
 }
 
-bool OverviewEffect::supported()
+QuickSceneView *OverviewEffect::createView(EffectScreen *screen)
 {
-    return effects->compositingType() == OpenGLCompositing;
+    return new OverviewScreenView(m_qmlComponent, this, screen);
 }
 
 void OverviewEffect::reconfigure(ReconfigureFlags)
@@ -187,51 +161,6 @@ void OverviewEffect::setBlurBackground(bool blur)
     }
 }
 
-void OverviewEffect::paintScreen(int mask, const QRegion &region, ScreenPaintData &data)
-{
-    Q_UNUSED(mask)
-    Q_UNUSED(region)
-
-    m_paintedScreen = data.screen();
-
-    if (effects->waylandDisplay()) {
-        OffscreenQuickView *screenView = m_screenViews.value(data.screen());
-        if (screenView) {
-            effects->renderOffscreenQuickView(screenView);
-        }
-    } else {
-        for (OffscreenQuickView *screenView : qAsConst(m_screenViews)) {
-            effects->renderOffscreenQuickView(screenView);
-        }
-    }
-}
-
-void OverviewEffect::postPaintScreen()
-{
-    // Screen views are repainted after kwin performs its compositing cycle. Another alternative
-    // is to update the views after receiving a vblank.
-    if (effects->waylandDisplay()) {
-        OverviewScreenView *screenView = m_screenViews.value(m_paintedScreen);
-        if (screenView && screenView->isDirty()) {
-            QMetaObject::invokeMethod(screenView, &OffscreenQuickView::update, Qt::QueuedConnection);
-            screenView->resetDirty();
-        }
-    } else {
-        for (OverviewScreenView *screenView : qAsConst(m_screenViews)) {
-            if (screenView->isDirty()) {
-                QMetaObject::invokeMethod(screenView, &OffscreenQuickView::update, Qt::QueuedConnection);
-                screenView->resetDirty();
-            }
-        }
-    }
-    effects->postPaintScreen();
-}
-
-bool OverviewEffect::isActive() const
-{
-    return !m_screenViews.isEmpty() && !effects->isScreenLocked();
-}
-
 int OverviewEffect::requestedEffectChainPosition() const
 {
     return 70;
@@ -248,7 +177,7 @@ bool OverviewEffect::borderActivated(ElectricBorder border)
 
 void OverviewEffect::toggle()
 {
-    if (!m_activated) {
+    if (!isRunning()) {
         activate();
     } else {
         deactivate();
@@ -257,10 +186,6 @@ void OverviewEffect::toggle()
 
 void OverviewEffect::activate()
 {
-    if (effects->activeFullScreenEffect()) {
-        return;
-    }
-
     if (!m_qmlEngine) {
         m_qmlEngine = new KDeclarative::QmlObjectSharedEngine(this);
     }
@@ -276,137 +201,26 @@ void OverviewEffect::activate()
         }
     }
 
-    effects->setActiveFullScreenEffect(this);
-    m_activated = true;
-
-    // Install an event filter to monitor cursor shape changes.
-    qApp->installEventFilter(this);
-
-    // This is an ugly hack to make hidpi rendering work as expected on wayland until we switch
-    // to Qt 6.3 or newer. See https://codereview.qt-project.org/c/qt/qtdeclarative/+/361506
-    if (effects->waylandDisplay()) {
-        m_dummyWindow.reset(new QWindow());
-        m_dummyWindow->setOpacity(0);
-        m_dummyWindow->resize(1, 1);
-        m_dummyWindow->setFlag(Qt::FramelessWindowHint);
-        m_dummyWindow->setVisible(true);
-        m_dummyWindow->requestActivate();
-    }
-
-    const QList<EffectScreen *> screens = effects->screens();
-    for (EffectScreen *screen : screens) {
-        createScreenView(screen);
-    }
-    effects->grabKeyboard(this);
-    effects->startMouseInterception(this, Qt::ArrowCursor);
+    setRunning(true);
 }
 
 void OverviewEffect::deactivate()
 {
-    for (OverviewScreenView *screenView : std::as_const(m_screenViews)) {
-        screenView->stop();
+    const auto screenViews = views();
+    for (QuickSceneView *view : screenViews) {
+        static_cast<OverviewScreenView *>(view)->stop();
     }
     m_shutdownTimer->start(animationDuration());
+}
+
+void OverviewEffect::realDeactivate()
+{
+    setRunning(false);
 }
 
 void OverviewEffect::quickDeactivate()
 {
     m_shutdownTimer->start(0);
-}
-
-void OverviewEffect::realDeactivate()
-{
-    qDeleteAll(m_screenViews);
-    m_screenViews.clear();
-    m_dummyWindow.reset();
-    m_activated = false;
-    qApp->removeEventFilter(this);
-    effects->ungrabKeyboard();
-    effects->stopMouseInterception(this);
-    effects->setActiveFullScreenEffect(nullptr);
-    effects->addRepaintFull();
-}
-
-void OverviewEffect::handleScreenAdded(EffectScreen *screen)
-{
-    if (isActive()) {
-        createScreenView(screen);
-    }
-}
-
-void OverviewEffect::handleScreenRemoved(EffectScreen *screen)
-{
-    delete m_screenViews.take(screen);
-}
-
-bool OverviewEffect::eventFilter(QObject *watched, QEvent *event)
-{
-    if (event->type() == QEvent::CursorChange) {
-        if (const QWindow *window = qobject_cast<QWindow *>(watched)) {
-            effects->defineCursor(window->cursor().shape());
-        }
-    }
-    return false;
-}
-
-void OverviewEffect::createScreenView(EffectScreen *screen)
-{
-    auto screenView = new OverviewScreenView(m_qmlComponent, screen, m_dummyWindow.data(), this);
-    screenView->setAutomaticRepaint(false);
-
-    connect(screenView, &OffscreenQuickView::repaintNeeded, this, [screenView]() {
-        effects->addRepaint(screenView->geometry());
-    });
-    connect(screenView, &OffscreenQuickView::renderRequested, screenView, &OverviewScreenView::scheduleRepaint);
-    connect(screenView, &OffscreenQuickView::sceneChanged, screenView, &OverviewScreenView::scheduleRepaint);
-
-    screenView->scheduleRepaint();
-    m_screenViews.insert(screen, screenView);
-}
-
-OverviewScreenView *OverviewEffect::viewAt(const QPoint &pos) const
-{
-    for (OverviewScreenView *screenView : qAsConst(m_screenViews)) {
-        if (screenView->geometry().contains(pos)) {
-            return screenView;
-        }
-    }
-    return nullptr;
-}
-
-void OverviewEffect::windowInputMouseEvent(QEvent *event)
-{
-    Qt::MouseButtons buttons;
-    QPoint globalPosition;
-    if (QMouseEvent *mouseEvent = dynamic_cast<QMouseEvent *>(event)) {
-        buttons = mouseEvent->buttons();
-        globalPosition = mouseEvent->globalPos();
-    } else if (QWheelEvent *wheelEvent = dynamic_cast<QWheelEvent *>(event)) {
-        buttons = wheelEvent->buttons();
-        globalPosition = wheelEvent->globalPosition().toPoint();
-    } else {
-        return;
-    }
-
-    if (buttons) {
-        if (!m_mouseImplicitGrab) {
-            m_mouseImplicitGrab = viewAt(globalPosition);
-        }
-    }
-
-    OverviewScreenView *target = m_mouseImplicitGrab;
-    if (!target) {
-        target = viewAt(globalPosition);
-    }
-
-    if (!buttons) {
-        m_mouseImplicitGrab = nullptr;
-    }
-
-    if (target) {
-        target->forwardMouseEvent(event);
-    }
-
 }
 
 void OverviewEffect::grabbedKeyboardEvent(QKeyEvent *keyEvent)
@@ -417,41 +231,7 @@ void OverviewEffect::grabbedKeyboardEvent(QKeyEvent *keyEvent)
         }
         return;
     }
-    OverviewScreenView *screenView = m_screenViews.value(effects->activeScreen());
-    if (screenView) {
-        screenView->contentItem()->setFocus(true);
-        screenView->forwardKeyEvent(keyEvent);
-    }
-}
-
-bool OverviewEffect::touchDown(qint32 id, const QPointF &pos, quint32 time)
-{
-    for (OverviewScreenView *screenView : qAsConst(m_screenViews)) {
-        if (screenView->geometry().contains(pos.toPoint())) {
-            return screenView->forwardTouchDown(id, pos, time);
-        }
-    }
-    return false;
-}
-
-bool OverviewEffect::touchMotion(qint32 id, const QPointF &pos, quint32 time)
-{
-    for (OverviewScreenView *screenView : qAsConst(m_screenViews)) {
-        if (screenView->geometry().contains(pos.toPoint())) {
-            return screenView->forwardTouchMotion(id, pos, time);
-        }
-    }
-    return false;
-}
-
-bool OverviewEffect::touchUp(qint32 id, quint32 time)
-{
-    for (OverviewScreenView *screenView : qAsConst(m_screenViews)) {
-        if (screenView->forwardTouchUp(id, time)) {
-            return true;
-        }
-    }
-    return false;
+    QuickSceneEffect::grabbedKeyboardEvent(keyEvent);
 }
 
 } // namespace KWin
