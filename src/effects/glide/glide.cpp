@@ -90,7 +90,6 @@ void GlideEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std:
 {
     if (m_animations.contains(w)) {
         data.setTransformed();
-        // w->enablePainting(EffectWindow::PAINT_DISABLED_BY_DELETE);
     }
 
     effects->prePaintWindow(w, data, presentTime);
@@ -177,6 +176,7 @@ void GlideEffect::postPaintScreen()
                 w->unrefWindow();
             }
             animationIt = m_animations.erase(animationIt);
+            w->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE, false);
         } else {
             ++animationIt;
         }
@@ -246,6 +246,7 @@ void GlideEffect::windowClosed(EffectWindow *w)
         return;
     }
 
+    w->enablePainting(this, EffectWindow::PAINT_DISABLED_BY_DELETE);
     w->refWindow();
     w->setData(WindowClosedGrabRole, QVariant::fromValue(static_cast<void*>(this)));
 
