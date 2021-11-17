@@ -274,6 +274,12 @@ quint64 AnimationEffect::p_animate( EffectWindow *w, Attribute a, uint meta, int
     else {
         triggerRepaint();
     }
+
+    w->enablePainting(this,
+                      EffectWindow::PAINT_DISABLED_BY_MINIMIZE |
+                      EffectWindow::PAINT_DISABLED_BY_DESKTOP |
+                      EffectWindow::PAINT_DISABLED_BY_ACTIVITY |
+                      EffectWindow::PAINT_DISABLED_BY_DELETE);
     return ret_id;
 }
 
@@ -459,30 +465,15 @@ void AnimationEffect::prePaintWindow( EffectWindow* w, WindowPrePaintData& data,
     Q_D(AnimationEffect);
     AniMap::const_iterator entry = d->m_animations.constFind( w );
     if ( entry != d->m_animations.constEnd() ) {
-        bool isUsed = false;
-        bool paintDeleted = false;
         for (QList<AniData>::const_iterator anim = entry->first.constBegin(); anim != entry->first.constEnd(); ++anim) {
             if (anim->startTime > clock() && !anim->waitAtSource)
                 continue;
 
-            isUsed = true;
             if (anim->attribute == Opacity || anim->attribute == CrossFadePrevious)
                 data.setTranslucent();
             else if (!(anim->attribute == Brightness || anim->attribute == Saturation)) {
                 data.setTransformed();
             }
-
-            paintDeleted |= anim->keepAlive;
-        }
-        if ( isUsed ) {
-            // if ( w->isMinimized() )
-            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_MINIMIZE );
-            // else if ( w->isDeleted() && paintDeleted )
-            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DELETE );
-            // else if ( !w->isOnCurrentDesktop() )
-            //     w->enablePainting( EffectWindow::PAINT_DISABLED_BY_DESKTOP );
-//            if( !w->isPaintingEnabled() && !effects->activeFullScreenEffect() )
-//                effects->addLayerRepaint(w->expandedGeometry());
         }
     }
     effects->prePaintWindow(w, data, presentTime);
@@ -614,13 +605,13 @@ void AnimationEffect::postPaintScreen()
     for (auto entry = d->m_animations.begin(); entry != d->m_animations.end();) {
         bool invalidateLayerRect = false;
         int animCounter = 0;
+        EffectWindow *window = entry.key();
         for (auto anim = entry->first.begin(); anim != entry->first.end();) {
             if (anim->isActive() || anim->startTime > clock() && !anim->waitAtSource) {
                 ++anim;
                 ++animCounter;
                 continue;
             }
-            EffectWindow *window = entry.key();
             d->m_justEndedAnimation = anim->id;
             animationEnded(window, anim->attribute, anim->meta);
             d->m_justEndedAnimation = 0;
@@ -644,6 +635,12 @@ void AnimationEffect::postPaintScreen()
             invalidateLayerRect = damageDirty = true;
         }
         if (entry->first.isEmpty()) {
+            window->enablePainting(this,
+                                   EffectWindow::PAINT_DISABLED_BY_MINIMIZE |
+                                   EffectWindow::PAINT_DISABLED_BY_DESKTOP |
+                                   EffectWindow::PAINT_DISABLED_BY_ACTIVITY |
+                                   EffectWindow::PAINT_DISABLED_BY_DELETE, false);
+
             effects->addRepaint(entry->second);
             entry = d->m_animations.erase(entry);
         } else {
