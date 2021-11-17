@@ -34,6 +34,7 @@
 #include "screenlockerwatcher.h"
 #include "virtualdesktops.h"
 #include "window_property_notify_x11_filter.h"
+#include "windowitem.h"
 #include "workspace.h"
 #include "kwinglutils.h"
 #include "kwineffectquickview.h"
@@ -1804,14 +1805,51 @@ EffectWindowImpl::~EffectWindowImpl()
     }
 }
 
-void EffectWindowImpl::enablePainting(int reason)
+void EffectWindowImpl::enablePainting(Effect *effect, int reason, bool on)
 {
-    sceneWindow()->enablePainting(reason);
+    int &mask = paintingEnabled[effect];
+    if (on) {
+        if ((mask & reason) != reason) {
+            mask |= reason;
+            updateVisibility();
+        }
+    } else {
+        if (mask & reason) {
+            mask &= ~reason;
+            updateVisibility();
+        }
+    }
 }
 
-void EffectWindowImpl::disablePainting(int reason)
+void EffectWindowImpl::disablePainting(Effect *effect, int reason, bool on)
 {
-    sceneWindow()->disablePainting(reason);
+    int &mask = paintingDisabled[effect];
+    if (on) {
+        if ((mask & reason) != reason) {
+            mask |= reason;
+            updateVisibility();
+        }
+    } else {
+        if (mask & reason) {
+            mask &= ~reason;
+            updateVisibility();
+        }
+    }
+}
+
+int EffectWindowImpl::explicitPaintingEnabled() const
+{
+    return std::accumulate(paintingEnabled.begin(), paintingEnabled.end(), 0, std::bit_or());
+}
+
+int EffectWindowImpl::explicitPaintingDisabled() const
+{
+    return std::accumulate(paintingDisabled.begin(), paintingDisabled.end(), 0, std::bit_or());
+}
+
+void EffectWindowImpl::updateVisibility()
+{
+    toplevel->windowItem()->updatePaintingDisabled();
 }
 
 void EffectWindowImpl::addRepaint(const QRect &r)

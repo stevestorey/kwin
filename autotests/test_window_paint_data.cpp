@@ -27,8 +27,8 @@ public:
     QVariant data(int role) const override;
     QRect decorationInnerRect() const override;
     void deleteProperty(long int atom) const override;
-    void disablePainting(int reason) override;
-    void enablePainting(int reason) override;
+    void disablePainting(Effect *effect, int reason, bool on = true) override;
+    void enablePainting(Effect *effect, int reason, bool on = true) override;
     void addRepaint(const QRect &r) override;
     void addRepaint(int x, int y, int w, int h) override;
     void addRepaintFull() override;
@@ -283,14 +283,18 @@ void MockEffectWindow::deleteProperty(long int atom) const
     Q_UNUSED(atom)
 }
 
-void MockEffectWindow::disablePainting(int reason)
+void MockEffectWindow::disablePainting(Effect *effect, int reason, bool on)
 {
+    Q_UNUSED(effect)
     Q_UNUSED(reason)
+    Q_UNUSED(on)
 }
 
-void MockEffectWindow::enablePainting(int reason)
+void MockEffectWindow::enablePainting(Effect *effect, int reason, bool on)
 {
+    Q_UNUSED(effect)
     Q_UNUSED(reason)
+    Q_UNUSED(on)
 }
 
 void MockEffectWindow::addRepaint(const QRect &r)

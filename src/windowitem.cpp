@@ -8,6 +8,7 @@
 #include "abstract_client.h"
 #include "decorationitem.h"
 #include "deleted.h"
+#include "effects.h"
 #include "internal_client.h"
 #include "scene.h"
 #include "shadowitem.h"
@@ -137,7 +138,7 @@ void WindowItem::updateDecorationItem()
 
 void WindowItem::updatePaintingDisabled()
 {
-    int effectiveDisabled = 0;
+    int effectiveDisabled = m_window->effectWindow()->explicitPaintingDisabled();
     if (m_window->isDeleted()) {
         effectiveDisabled |= Scene::Window::PAINT_DISABLED_BY_DELETE;
     }
@@ -155,7 +156,7 @@ void WindowItem::updatePaintingDisabled()
             effectiveDisabled |= Scene::Window::PAINT_DISABLED;
         }
     }
-    setVisible(!effectiveDisabled);
+    setVisible(!(effectiveDisabled & ~m_window->effectWindow()->explicitPaintingEnabled()));
 }
 
 WindowItemX11::WindowItemX11(Toplevel *window, Item *parent)

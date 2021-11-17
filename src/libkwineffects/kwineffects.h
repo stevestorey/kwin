@@ -2208,8 +2208,8 @@ public:
     explicit EffectWindow(QObject *parent = nullptr);
     ~EffectWindow() override;
 
-    virtual void enablePainting(int reason) = 0;
-    virtual void disablePainting(int reason) = 0;
+    virtual void enablePainting(Effect *effect, int reason, bool on = true) = 0;
+    virtual void disablePainting(Effect *effect, int reason, bool on = true) = 0;
     Q_SCRIPTABLE virtual void addRepaint(const QRect &r) = 0;
     Q_SCRIPTABLE virtual void addRepaint(int x, int y, int w, int h) = 0;
     Q_SCRIPTABLE virtual void addRepaintFull() = 0;

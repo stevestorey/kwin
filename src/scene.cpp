@@ -298,12 +298,11 @@ void Scene::paintGenericScreen(int orig_mask, const ScreenPaintData &)
 
         WindowPrePaintData data;
         data.mask = orig_mask | (w->isOpaque() ? PAINT_WINDOW_OPAQUE : PAINT_WINDOW_TRANSLUCENT);
-        w->resetPaintingEnabled();
         data.paint = infiniteRegion(); // no clipping, so doesn't really matter
         data.clip = QRegion();
         // preparation step
         effects->prePaintWindow(effectWindow(w), data, m_expectedPresentTimestamp);
-        if (!w->isPaintingEnabled()) {
+        if (!w->windowItem()->isVisible()) {
             continue;
         }
         phase2.append({w, infiniteRegion(), data.clip, data.mask,});
@@ -356,7 +355,6 @@ void Scene::paintSimpleScreen(int orig_mask, const QRegion &region)
         Toplevel *toplevel = window->window();
         WindowPrePaintData data;
         data.mask = orig_mask | (window->isOpaque() ? PAINT_WINDOW_OPAQUE : PAINT_WINDOW_TRANSLUCENT);
-        window->resetPaintingEnabled();
         data.paint = region;
         accumulateRepaints(window->windowItem(), painted_screen, &data.paint);
 
@@ -393,7 +391,7 @@ void Scene::paintSimpleScreen(int orig_mask, const QRegion &region)
 
         // preparation step
         effects->prePaintWindow(effectWindow(window), data, m_expectedPresentTimestamp);
-        if (!window->isPaintingEnabled()) {
+        if (!window->windowItem()->isVisible()) {
             continue;
         }
         dirtyArea |= data.paint;
@@ -635,7 +633,6 @@ SurfaceTexture *Scene::createSurfaceTextureWayland(SurfacePixmapWayland *pixmap)
 Scene::Window::Window(Toplevel *client, QObject *parent)
     : QObject(parent)
     , toplevel(client)
-    , disable_painting(0)
 {
     if (qobject_cast<WaylandClient *>(client)) {
         m_windowItem.reset(new WindowItemWayland(toplevel));
@@ -716,45 +713,6 @@ bool Scene::Window::isVisible() const
 bool Scene::Window::isOpaque() const
 {
     return toplevel->opacity() == 1.0 && !toplevel->hasAlpha();
-}
-
-bool Scene::Window::isPaintingEnabled() const
-{
-    return !disable_painting;
-}
-
-void Scene::Window::resetPaintingEnabled()
-{
-    disable_painting = 0;
-    if (toplevel->isDeleted())
-        disable_painting |= PAINT_DISABLED_BY_DELETE;
-    if (static_cast<EffectsHandlerImpl*>(effects)->isDesktopRendering()) {
-        if (!toplevel->isOnDesktop(static_cast<EffectsHandlerImpl*>(effects)->currentRenderedDesktop())) {
-            disable_painting |= PAINT_DISABLED_BY_DESKTOP;
-        }
-    } else {
-        if (!toplevel->isOnCurrentDesktop())
-            disable_painting |= PAINT_DISABLED_BY_DESKTOP;
-    }
-    if (!toplevel->isOnCurrentActivity())
-        disable_painting |= PAINT_DISABLED_BY_ACTIVITY;
-    if (AbstractClient *c = dynamic_cast<AbstractClient*>(toplevel)) {
-        if (c->isMinimized())
-            disable_painting |= PAINT_DISABLED_BY_MINIMIZE;
-        if (c->isHiddenInternal()) {
-            disable_painting |= PAINT_DISABLED;
-        }
-    }
-}
-
-void Scene::Window::enablePainting(int reason)
-{
-    disable_painting &= ~reason;
-}
-
-void Scene::Window::disablePainting(int reason)
-{
-    disable_painting |= reason;
 }
 
 WindowItem *Scene::Window::windowItem() const

@@ -384,8 +384,8 @@ public:
     explicit EffectWindowImpl(Toplevel *toplevel);
     ~EffectWindowImpl() override;
 
-    void enablePainting(int reason) override;
-    void disablePainting(int reason) override;
+    void enablePainting(Effect *effect, int reason, bool on) override;
+    void disablePainting(Effect *effect, int reason, bool on) override;
 
     void addRepaint(const QRect &r) override;
     void addRepaint(int x, int y, int w, int h) override;
@@ -508,10 +508,17 @@ public:
     void setData(int role, const QVariant &data) override;
     QVariant data(int role) const override;
 
+    int explicitPaintingEnabled() const;
+    int explicitPaintingDisabled() const;
+
 private:
+    void updateVisibility();
+
     Toplevel* toplevel;
     Scene::Window* sw; // This one is used only during paint pass.
     QHash<int, QVariant> dataMap;
+    QHash<Effect *, int> paintingEnabled;
+    QHash<Effect *, int> paintingDisabled;
     bool managed = false;
     bool waylandClient;
     bool x11Client;

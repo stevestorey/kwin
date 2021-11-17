@@ -286,9 +286,6 @@ public:
     // access to the internal window class
     // TODO eventually get rid of this
     Toplevel* window() const;
-    // should the window be painted
-    bool isPaintingEnabled() const;
-    void resetPaintingEnabled();
     // Flags explaining why painting should be disabled
     enum {
         // Window will not be painted
@@ -302,8 +299,6 @@ public:
         // Window will not be painted because it's not on the current activity
         PAINT_DISABLED_BY_ACTIVITY     = 1 << 5
     };
-    void enablePainting(int reason);
-    void disablePainting(int reason);
     // is the window visible at all
     bool isVisible() const;
     // is the window fully opaque
@@ -324,7 +319,6 @@ private:
 
     void updateWindowPosition();
 
-    int disable_painting;
     QScopedPointer<WindowItem> m_windowItem;
     Q_DISABLE_COPY(Window)
 };
