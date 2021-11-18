@@ -30,9 +30,11 @@ QObject *GenericScriptedConfigFactory::create(const char *iface, QWidget *parent
     Q_UNUSED(iface)
     Q_UNUSED(parent)
     Q_UNUSED(keyword)
-    Q_ASSERT(!args.isEmpty());
 
-    const QString pluginId = args.first().toString();
+    QString pluginId = args.isEmpty() ? QString() : args.first().toString();
+    if (pluginId.isEmpty()) {
+        pluginId = metaData().value("X-KDE-PluginKeyword");
+    }
     if (pluginId.startsWith(QLatin1String("kwin4_effect_"))) {
         return new ScriptedEffectConfig(pluginId, parentWidget, args);
     } else {
