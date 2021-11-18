@@ -311,22 +311,6 @@ DrmPlane::Transformations outputToPlaneTransform(DrmOutput::Transform transform)
     }
 }
 
-void DrmOutput::updateTransform(Transform transform)
-{
-    setTransformInternal(transform);
-    static bool valid;
-    // If not set or wrong value, assume KWIN_DRM_SW_ROTATIONS_ONLY=0
-    static int envOnlySoftwareRotations = qEnvironmentVariableIntValue("KWIN_DRM_SW_ROTATIONS_ONLY", &valid) == 1;
-    if (!valid || !envOnlySoftwareRotations) {
-        m_pipeline->pending.transformation = outputToPlaneTransform(transform);
-        if (m_gpu->testPendingConfiguration(DrmGpu::TestMode::TestOnly)) {
-            m_pipeline->applyPendingChanges();
-        } else {
-            m_pipeline->revertPendingChanges();
-        }
-    }
-}
-
 void DrmOutput::updateModes()
 {
     auto conn = m_pipeline->connector();
@@ -431,6 +415,9 @@ QVector<uint64_t> DrmOutput::supportedModifiers(uint32_t drmFormat) const
 
 bool DrmOutput::queueChanges(const WaylandOutputConfig &config)
 {
+    static bool valid;
+    static int envOnlySoftwareRotations = qEnvironmentVariableIntValue("KWIN_DRM_SW_ROTATIONS_ONLY", &valid) == 1 && valid;
+
     auto props = config.constChangeSet(this);
     m_pipeline->pending.active = props->enabled;
     auto modelist = m_connector->modes();
@@ -447,7 +434,9 @@ bool DrmOutput::queueChanges(const WaylandOutputConfig &config)
     m_pipeline->pending.modeIndex = index;
     m_pipeline->pending.overscan = props->overscan;
     m_pipeline->pending.rgbRange = props->rgbRange;
-    m_pipeline->pending.transformation = DrmPlane::Transformation::Rotate0;
+    if (!envOnlySoftwareRotations) {
+        m_pipeline->pending.transformation = outputToPlaneTransform(props->transform);
+    }
     m_pipeline->pending.enabled = props->enabled;
     return true;
 }
@@ -464,7 +453,7 @@ void DrmOutput::applyQueuedChanges(const WaylandOutputConfig &config)
     setEnabled(props->enabled && m_pipeline->pending.crtc);
     moveTo(props->pos);
     setScale(props->scale);
-    updateTransform(props->transform);
+    setTransformInternal(props->transform);
 
     m_connector->setModeIndex(m_pipeline->pending.modeIndex);
     auto mode = m_connector->currentMode();
