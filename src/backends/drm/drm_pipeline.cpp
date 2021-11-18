@@ -98,6 +98,8 @@ bool DrmPipeline::present(const QSharedPointer<DrmBuffer> &buffer)
 
 bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, CommitMode mode, const QVector<DrmObject*> &unusedObjects)
 {
+    bool ok;
+    static bool verboseLogging = qEnvironmentVariableIntValue("KWIN_VERBOSE_DRM_LOGGING", &ok) != 0 && ok;
     Q_ASSERT(!pipelines.isEmpty());
     if (pipelines[0]->gpu()->atomicModeSetting()) {
         drmModeAtomicReq *req = drmModeAtomicAlloc();
@@ -106,11 +108,15 @@ bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, Commit
             return false;
         }
         uint32_t flags = 0;
-        const auto &failed = [pipelines, req, mode, &flags, unusedObjects](){
+        const auto &failed = [pipelines, req, mode, &flags, unusedObjects](bool alwaysLogVerbose){
             drmModeAtomicFree(req);
-            printFlags(flags);
+            if (verboseLogging || alwaysLogVerbose) {
+                printFlags(flags);
+            }
             for (const auto &pipeline : pipelines) {
-                pipeline->printDebugInfo();
+                if (verboseLogging || alwaysLogVerbose) {
+                    pipeline->printDebugInfo();
+                }
                 if (pipeline->m_oldTestBuffer) {
                     pipeline->m_primaryBuffer = pipeline->m_oldTestBuffer;
                     pipeline->m_oldTestBuffer = nullptr;
@@ -134,11 +140,11 @@ bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, Commit
         for (const auto &pipeline : pipelines) {
             if (!pipeline->checkTestBuffer()) {
                 qCWarning(KWIN_DRM) << "Checking test buffer failed for" << mode;
-                return failed();
+                return failed(true);
             }
             if (!pipeline->populateAtomicValues(req, flags)) {
                 qCWarning(KWIN_DRM) << "Populating atomic values failed for" << mode;
-                return failed();
+                return failed(true);
             }
         }
         for (const auto &unused : unusedObjects) {
@@ -148,7 +154,7 @@ bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, Commit
             }
             if (!unused->atomicPopulate(req)) {
                 qCWarning(KWIN_DRM) << "Populating atomic values failed for unused resource" << unused;
-                return failed();
+                return failed(true);
             }
         }
         bool modeset = flags & DRM_MODE_ATOMIC_ALLOW_MODESET;
@@ -163,12 +169,14 @@ bool DrmPipeline::commitPipelines(const QVector<DrmPipeline*> &pipelines, Commit
             flags |= DRM_MODE_ATOMIC_NONBLOCK;
         }
         if (drmModeAtomicCommit(pipelines[0]->gpu()->fd(), req, (flags & (~DRM_MODE_PAGE_FLIP_EVENT)) | DRM_MODE_ATOMIC_TEST_ONLY, nullptr) != 0) {
-            qCWarning(KWIN_DRM) << "Atomic test for" << mode << "failed!" << strerror(errno);
-            return failed();
+            if (verboseLogging) {
+                qCWarning(KWIN_DRM) << "Atomic test for" << mode << "failed!" << strerror(errno);
+            }
+            return failed(false);
         }
         if (mode != CommitMode::Test && drmModeAtomicCommit(pipelines[0]->gpu()->fd(), req, flags, nullptr) != 0) {
             qCWarning(KWIN_DRM) << "Atomic commit failed! This should never happen!" << strerror(errno);
-            return failed();
+            return failed(true);
         }
         for (const auto &pipeline : pipelines) {
             pipeline->m_oldTestBuffer = nullptr;
