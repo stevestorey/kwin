@@ -7,7 +7,7 @@
 #pragma once
 
 #include <kwineffects.h>
-#include <kwineffectquickview.h>
+#include <kwinoffscreenquickview.h>
 
 #include "expolayout.h"
 
@@ -16,7 +16,7 @@ namespace KWin
 
 class OverviewEffect;
 
-class OverviewScreenView : public EffectQuickScene
+class OverviewScreenView : public OffscreenQuickScene
 {
     Q_OBJECT
 
