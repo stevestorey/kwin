@@ -26,6 +26,7 @@ enum class BuiltInEffect
     Blur,
     ColorPicker,
     Contrast,
+    CoverSwitch,
     DesktopGrid,
     DimInactive,
     FallApart,

@@ -75,6 +75,7 @@ set(kwin4_effect_builtins_sources
     blur/blur.cpp
     blur/blurshader.cpp
     colorpicker/colorpicker.cpp
+    coverswitch/coverswitch.cpp
     desktopgrid/desktopgrid.cpp
     diminactive/diminactive.cpp
     effect_builtins.cpp
@@ -115,6 +116,7 @@ qt5_add_resources(kwin4_effect_builtins_sources shaders.qrc)
 
 kconfig_add_kcfg_files(kwin4_effect_builtins_sources
     blur/blurconfig.kcfgc
+    coverswitch/coverswitchconfig.kcfgc
     desktopgrid/desktopgridconfig.kcfgc
     diminactive/diminactiveconfig.kcfgc
     fallapart/fallapartconfig.kcfgc
@@ -189,6 +191,7 @@ add_subdirectory(zoom)
 # OpenGL-specific effects
 add_subdirectory(blur)
 include(backgroundcontrast/CMakeLists.txt)
+add_subdirectory(coverswitch)
 add_subdirectory(glide)
 add_subdirectory(invert)
 add_subdirectory(lookingglass)
