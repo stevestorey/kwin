@@ -65,6 +65,7 @@ private:
 
     // Builtin effects' names
     QString m_coverSwitch;
+    QString m_flipSwitch;
 };
 
 } // namespace

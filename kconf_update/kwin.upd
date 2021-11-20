@@ -56,18 +56,6 @@ File=kwinrc
 Group=Plugins
 Script=kwin-5.23-disable-translucency-effect.sh,sh
 
-# Remove the Flip Switch effect
-Id=remove-flip-switch-effect
-File=kwinrc
-Group=TabBox,TabBoxAlternative
-Script=kwin-5.23-remove-flip-switch.py,python3
-
-# Remove the Cover Switch effect
-Id=remove-cover-switch-effect
-File=kwinrc
-Group=TabBox,TabBoxAlternative
-Script=kwin-5.23-remove-cover-switch.py,python3
-
 # Remove the Desktop Cube Animation effect
 Id=remove-cubeslide-effect
 File=kwinrc

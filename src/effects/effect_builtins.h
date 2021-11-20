@@ -30,6 +30,7 @@ enum class BuiltInEffect
     DesktopGrid,
     DimInactive,
     FallApart,
+    FlipSwitch,
     Glide,
     HighlightWindow,
     Invert,

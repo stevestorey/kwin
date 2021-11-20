@@ -76,6 +76,7 @@ void TestBuiltInEffectLoader::testHasEffect_data()
     QTest::newRow("DesktopGrid")                    << QStringLiteral("desktopgrid")       << true;
     QTest::newRow("DimInactive")                    << QStringLiteral("diminactive")       << true;
     QTest::newRow("FallApart")                      << QStringLiteral("fallapart")         << true;
+    QTest::newRow("FlipSwitch")                     << QStringLiteral("flipswitch")        << true;
     QTest::newRow("Glide")                          << QStringLiteral("glide")             << true;
     QTest::newRow("HighlightWindow")                << QStringLiteral("highlightwindow")   << true;
     QTest::newRow("Invert")                         << QStringLiteral("invert")            << true;
@@ -126,6 +127,7 @@ void TestBuiltInEffectLoader::testKnownEffects()
                     << QStringLiteral("desktopgrid")
                     << QStringLiteral("diminactive")
                     << QStringLiteral("fallapart")
+                    << QStringLiteral("flipswitch")
                     << QStringLiteral("glide")
                     << QStringLiteral("highlightwindow")
                     << QStringLiteral("invert")
@@ -187,6 +189,9 @@ void TestBuiltInEffectLoader::testSupported_data()
     QTest::newRow("DimInactive")                    << QStringLiteral("diminactive")       << true  << qc << true;
     QTest::newRow("FallApart")                      << QStringLiteral("fallapart")         << false << qc << true;
     QTest::newRow("FallApart-GL")                   << QStringLiteral("fallapart")         << true  << oc << true;
+    QTest::newRow("FlipSwitch")                     << QStringLiteral("flipswitch")        << false << qc << true;
+    QTest::newRow("FlipSwitch-GL")                  << QStringLiteral("flipswitch")        << true  << oc << true;
+    QTest::newRow("FlipSwitch-GL-no-anim")          << QStringLiteral("flipswitch")        << false << oc << false;
     QTest::newRow("Glide")                          << QStringLiteral("glide")             << false << qc << true;
     QTest::newRow("Glide-GL")                       << QStringLiteral("glide")             << true  << oc << true;
     QTest::newRow("Glide-GL-no-anim")               << QStringLiteral("glide")             << false << oc << false;
@@ -268,6 +273,8 @@ void TestBuiltInEffectLoader::testLoadEffect_data()
     QTest::newRow("DimInactive")                    << QStringLiteral("diminactive")       << true  << qc;
     QTest::newRow("FallApart")                      << QStringLiteral("fallapart")         << false << qc;
     QTest::newRow("FallApart-GL")                   << QStringLiteral("fallapart")         << true  << oc;
+    QTest::newRow("FlipSwitch")                     << QStringLiteral("flipswitch")        << false << qc;
+    QTest::newRow("FlipSwitch-GL")                  << QStringLiteral("flipswitch")        << true  << oc;
     QTest::newRow("Glide")                          << QStringLiteral("glide")             << false << qc;
     QTest::newRow("Glide-GL")                       << QStringLiteral("glide")             << true  << oc;
     QTest::newRow("HighlightWindow")                << QStringLiteral("highlightwindow")   << true  << qc;
